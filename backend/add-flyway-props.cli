@@ -1,0 +1,12 @@
+embed-server --server-config=standalone.xml
+
+# Add Flyway system properties
+/system-property=flyway.url:add(value=jdbc:mariadb://host.docker.internal:3306/temco_system)
+/system-property=flyway.user:add(value=root)
+/system-property=flyway.password:add(value=temco123)
+/system-property=flyway.locations:add(value=classpath:db/migration)
+/system-property=flyway.baselineOnMigrate:add(value=true)
+/system-property=flyway.table:add(value=eepip_flyway_schema_history)
+/system-property=flyway.validateOnMigrate:add(value=true)
+
+stop-embedded-server

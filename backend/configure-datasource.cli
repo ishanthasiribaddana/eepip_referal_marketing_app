@@ -1,0 +1,14 @@
+embed-server --server-config=standalone.xml
+
+# Add MariaDB driver (if not exists)
+if (outcome != success) of /subsystem=datasources/jdbc-driver=mariadb:read-resource
+    /subsystem=datasources/jdbc-driver=mariadb:add(driver-name=mariadb,driver-module-name=org.mariadb,driver-class-name=org.mariadb.jdbc.Driver)
+end-if
+
+# Add datasource (matching persistence.xml jta-data-source)
+/subsystem=datasources/data-source=EepipDS:add(jndi-name=java:/EepipDS,driver-name=mariadb,connection-url=jdbc:mariadb://host.docker.internal:3306/temco_system,user-name=root,password=temco123)
+
+# Enable datasource
+/subsystem=datasources/data-source=EepipDS:enable
+
+stop-embedded-server

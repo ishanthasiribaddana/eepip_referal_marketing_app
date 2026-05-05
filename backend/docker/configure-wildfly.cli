@@ -1,0 +1,13 @@
+# Offline WildFly configuration (embed-server mode).
+# Registers MariaDB JDBC driver and EepipDS datasource.
+# The org.mariadb module is created via filesystem before this script runs.
+
+embed-server --server-config=standalone.xml --std-out=echo
+
+# Register JDBC driver (references filesystem module org.mariadb)
+/subsystem=datasources/jdbc-driver=mariadb:add(driver-name=mariadb,driver-module-name=org.mariadb,driver-xa-datasource-class-name=org.mariadb.jdbc.MariaDbDataSource,driver-class-name=org.mariadb.jdbc.Driver)
+
+# Register datasource with env-driven connection parameters (resolved at runtime)
+data-source add --name=EepipDS --jndi-name=java:/EepipDS --driver-name=mariadb --connection-url=jdbc:mariadb://${env.DB_HOST:localhost}:${env.DB_PORT:3306}/${env.DB_NAME:eepip_db} --user-name=${env.DB_USER:eepip_user} --password=${env.DB_PASSWORD:eepip_password} --min-pool-size=5 --max-pool-size=20 --enabled=true --use-ccm=true --validate-on-match=true --background-validation=false --check-valid-connection-sql="SELECT 1"
+
+stop-embedded-server

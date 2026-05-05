@@ -1,0 +1,4674 @@
+﻿📘 Component Specification (V2)
+Component Name: Student Program Ledger (SPL)
+________________
+
+
+🎯 1. Purpose
+The Student Program Ledger (SPL) manages and displays the education program value, Monthly Education Credits (MEC), tuition usage, and refund lifecycle for each enrolled student under the Education Easy-Pay Investment Plan (EEPIP).
+This component ensures:
+* Transparent tracking of program value
+* Controlled monthly value usage (MEC)
+* Proper refund eligibility enforcement
+* Full auditability of student financial interactions
+________________
+
+
+🧩 2. Core Concept
+* The system maintains a fixed program value (Rs. 1,800,000)
+* Each month:
+   * MEC is credited
+   * Tuition is debited
+* Net balance remains constant
+Additionally:
+* A time-bound cooling-off window allows controlled refund handling
+* All actions are consent-driven and auditable
+________________
+
+
+📊 3. Business Rules
+________________
+
+
+🔹 Rule 1: Initial Program Value
+On enrollment:
+program_value = 1,800,000 LKR
+________________
+
+
+🔹 Rule 2: Monthly Education Credits (MEC)
+MEC = program_value × 16% ÷ 12 = 24,000 LKR
+Each month:
+* Credit: MEC (24,000)
+* Debit: Tuition (24,000)
+________________
+
+
+🔹 Rule 3: Balance Integrity
+closing_balance = opening_balance
+________________
+
+
+🔹 Rule 4: Duration
+* 36 months (BSc phase)
+________________
+
+
+🔹 Rule 5: Non-Cash Nature
+* Program value and MEC:
+   * ❌ Not withdrawable
+   * ❌ Not transferable
+   * ✔ Represent education entitlement only
+________________
+
+
+🔹 Rule 6: Cooling-Off Policy
+* Duration: 14 days from payment_date
+* Refund allowed ONLY IF:
+today <= cooling_off_end_date AND today < program_start_date
+________________
+
+
+🔹 Rule 7: Program Commencement
+Defined as:
+* First class OR
+* LMS access OR
+* Orientation session
+________________
+
+
+🔹 Rule 8: Refund Restrictions
+* After:
+   * Cooling-off expiry OR
+   * Program commencement
+👉 Refund = NOT allowed
+________________
+
+
+🗂️ 4. Data Model
+________________
+
+
+Entity: StudentProgramAccount
+Field
+	Type
+	Description
+	id
+	UUID
+	Unique ID
+	student_id
+	UUID
+	Linked student
+	program_value
+	Decimal
+	1,800,000
+	start_date
+	Date
+	Academic start
+	payment_date
+	Date
+	Payment received
+	cooling_off_end_date
+	Date
+	payment_date + 14 days
+	duration_months
+	Integer
+	36
+	status
+	Enum
+	ACTIVE / COMPLETED / DROPPED
+	academic_status
+	Enum
+	ACTIVE / WARNING / ON_HOLD / TERMINATED
+	________________
+
+
+Entity: ProgramLedgerEntry
+Field
+	Type
+	Description
+	id
+	UUID
+	Entry ID
+	account_id
+	UUID
+	Link
+	date
+	Date
+	Entry date
+	type
+	Enum
+	CREDIT / DEBIT
+	category
+	Enum
+	MEC / TUITION / REFUND
+	amount
+	Decimal
+	Amount
+	description
+	String
+	Label
+	sequence_no
+	Integer
+	Month index
+	________________
+
+
+Entity: RefundRequest
+Field
+	Type
+	Description
+	id
+	UUID
+	Request ID
+	account_id
+	UUID
+	Link
+	request_date
+	Date
+	Request date
+	refund_status
+	Enum
+	NONE / REQUESTED / APPROVED / REJECTED / PROCESSED
+	admin_fee_rate
+	Decimal
+	% (e.g. 5%)
+	admin_fee_amount
+	Decimal
+	Calculated
+	refundable_amount
+	Decimal
+	Final refund
+	remarks
+	String
+	Notes
+	________________
+
+
+Entity: ConsentRecord
+Field
+	Type
+	Description
+	id
+	UUID
+	Consent ID
+	student_id
+	UUID
+	Link
+	policy_version
+	String
+	Version
+	accepted_at
+	Timestamp
+	Time
+	ip_address
+	String
+	IP
+	device_info
+	String
+	Device
+	________________
+
+
+⚙️ 5. System Behavior
+________________
+
+
+🔹 On Enrollment
+* Create StudentProgramAccount
+* Set:
+   * program_value = 1,800,000
+   * payment_date = today
+   * cooling_off_end_date = +14 days
+   * status = ACTIVE
+________________
+
+
+🔹 Monthly Scheduler
+For each ACTIVE account:
+1. Check:
+   * sequence_no < 36
+   * academic_status = ACTIVE
+2. Generate:
+   * MEC entry (+24,000)
+   * Tuition entry (–24,000)
+________________
+
+
+🔹 Refund Request Flow
+________________
+
+
+Step 1: Request
+* Student submits request
+* Set:
+   * refund_status = REQUESTED
+________________
+
+
+Step 2: Eligibility Check
+IF today <= cooling_off_end_date AND today < program_start_date
+   THEN eligible = TRUE
+ELSE
+   eligible = FALSE
+________________
+
+
+Step 3: Calculation
+admin_fee = program_value × admin_fee_rate
+refundable_amount = program_value - admin_fee - incurred_costs
+________________
+
+
+Step 4: Decision
+* If eligible → APPROVED
+* Else → REJECTED
+________________
+
+
+Step 5: Processing
+* Refund issued
+* refund_status = PROCESSED
+* account.status = DROPPED
+________________
+
+
+🔹 On Dropout
+* status → DROPPED
+* Stop MEC generation
+________________
+
+
+🔹 On Completion
+* status → COMPLETED
+________________
+
+
+🖥️ 6. UI / Display Specification
+________________
+
+
+Student Portal View
+Summary:
+* Program Value: Rs. 1,800,000
+* MEC (Monthly): Rs. 24,000
+* Cooling-Off End Date: [date]
+________________
+
+
+Ledger:
+Date
+	Description
+	Credit
+	Debit
+	Balance
+	Jan
+	Monthly Education Credits (MEC)
+	24,000
+	–
+	1,800,000
+	Jan
+	Tuition Deduction
+	–
+	24,000
+	1,800,000
+	________________
+
+
+Refund Section:
+* Refund Eligible: YES / NO
+* Cooling-Off Deadline: [date]
+* Admin Fee: [amount]
+________________
+
+
+⚠️ 7. Compliance & Constraints
+________________
+
+
+Constraint 1: Terminology
+* Use ONLY:
+   * Monthly Education Credits (MEC)
+* ❌ Do not use “interest”
+________________
+
+
+Constraint 2: No Withdrawal
+* No direct withdrawal option
+________________
+
+
+Constraint 3: Consent Mandatory
+* Payment blocked without policy acceptance
+________________
+
+
+Constraint 4: Ledger Integrity
+* MEC and Tuition must always match
+________________
+
+
+Constraint 5: Audit Trail
+* All actions must be:
+   * Logged
+   * Immutable
+________________
+
+
+🔄 8. Integration Points
+________________
+
+
+Bank Module
+* Payment confirmation
+* Refund processing
+________________
+
+
+Academic Module
+* Attendance
+* Results
+* Academic status
+________________
+
+
+MLM Module
+* Reads academic_status
+* Blocks payouts if not ACTIVE
+________________
+
+
+🧪 9. Validation Rules
+* Refund only within cooling-off
+* No MEC after dropout
+* No negative balances
+* Consent must exist before payment
+________________
+
+
+🎯 10. Design Principle
+“SPL manages education value lifecycle, not cash balance.”
+________________
+
+
+✅ Final Outcome (V2)
+This version ensures:
+* ✔ Strong refund control
+* ✔ Legal defensibility
+* ✔ System-level enforcement
+* ✔ Clean separation of value vs cash
+* ✔ Full auditability
+________________
+
+
+If you want next, I can:
+* Convert this into API endpoints + database schema (JPA ready)
+* Or integrate it with your MLM commission engine spec
+📘 SDD Update – Student Program Ledger (SPL) V2.1
+🔄 New Scope Additions
+* Payment state machine
+* Chargeback handling workflow
+* Account freeze logic
+* Audit evidence capture
+________________
+
+
+🗂️ New / Updated Data Models
+🔹 Entity: PaymentTransaction
+Field
+	Type
+	Description
+	id
+	UUID
+	Payment ID
+	account_id
+	UUID
+	Linked student account
+	amount
+	Decimal
+	Paid amount
+	status
+	Enum
+	INITIATED / CONFIRMED / LOCKED / CHARGEBACK / REVERSED
+	payment_method
+	Enum
+	CARD / BANK_TRANSFER / OTHER
+	provider_reference
+	String
+	Gateway reference
+	created_at
+	Timestamp
+	Initiated time
+	confirmed_at
+	Timestamp
+	Confirmation time
+	locked_at
+	Timestamp
+	Lock time
+	________________
+
+
+🔹 Update: StudentProgramAccount
+Add fields:
+Field
+	Type
+	Description
+	payment_status
+	Enum
+	INITIATED / CONFIRMED / LOCKED
+	account_freeze_status
+	Boolean
+	TRUE if frozen
+	freeze_reason
+	String
+	e.g. CHARGEBACK
+	last_payment_id
+	UUID
+	Link to payment
+	________________
+
+
+🔹 Update: ConsentRecord (already exists)
+Ensure it stores:
+* policy_version
+* accepted_at
+* ip_address
+* device_info
+________________
+
+
+⚙️ System Behavior Updates
+________________
+
+
+🔹 Payment State Machine
+INITIATED → CONFIRMED → LOCKED
+Rules:
+* INITIATED
+   * Payment started but not verified
+   * ❌ No seat allocation
+   * ❌ No MLM activation
+* CONFIRMED
+   * Payment verified by bank
+   * ✔ Seat can be reserved
+   * ✔ MLM can be activated
+* LOCKED
+   * After cooling-off or manual lock
+   * Funds committed
+   * Refund restricted
+________________
+
+
+🔹 Activation Rule
+IF payment_status == CONFIRMED
+   THEN activate_seat = TRUE
+        activate_MLM = TRUE
+ELSE
+   activate_seat = FALSE
+   activate_MLM = FALSE
+________________
+
+
+🔹 Chargeback Detection
+Trigger:
+* Payment provider sends reversal/chargeback
+________________
+
+
+🔹 Chargeback Handling Workflow
+ON chargeback_event:
+
+
+SET payment_status = CHARGEBACK
+SET account_freeze_status = TRUE
+SET freeze_reason = "CHARGEBACK"
+
+
+BLOCK:
+   - MEC generation
+   - MLM payouts
+   - academic access (optional based on policy)
+
+
+TRIGGER:
+   recovery_workflow()
+________________
+
+
+🔹 Recovery Workflow
+Steps:
+1. Notify student
+2. Calculate:
+   * Outstanding amount
+   * Admin/recovery fee
+3. Await repayment
+________________
+
+
+🔹 Reactivation Rule
+IF outstanding_amount == 0
+   AND admin_fees_paid == TRUE
+THEN
+   account_freeze_status = FALSE
+   payment_status = LOCKED
+________________
+
+
+🖥️ UI / Portal Updates
+________________
+
+
+Payment Status Display
+* INITIATED → “Processing Payment”
+* CONFIRMED → “Payment Confirmed”
+* LOCKED → “Enrollment Finalized”
+* CHARGEBACK → “Account Suspended – Payment Issue”
+________________
+
+
+Alerts
+On chargeback:
+“Your account has been temporarily suspended due to a payment dispute. Please contact support to resolve.”
+________________
+
+
+⚠️ Validation Rules (New)
+* No MEC generation if:
+account_freeze_status == TRUE
+* No MLM payout if:
+payment_status != CONFIRMED OR account_freeze_status == TRUE
+________________
+
+
+🔐 Audit & Evidence Requirements
+System must store:
+* Payment logs
+* Consent records
+* Device/IP info
+* Policy version at acceptance
+________________
+
+
+🎯 Updated Design Principle (V2.1)
+“Program activation and benefits depend strictly on verified and settled payments.”
+________________
+
+
+✅ Final Outcome
+With this addition:
+* ✔ Chargeback abuse is controlled
+* ✔ Financial loss risk is reduced
+* ✔ Legal defensibility is strong
+* ✔ System behavior is deterministic
+________________
+
+
+If you want next, I can:
+📘 SDD Update – Student Program Ledger (SPL) V2.2 (KYC & AML Integration)
+________________
+
+
+🆕 1. New Scope
+* KYC verification
+* AML risk scoring
+* Source-of-funds validation
+* Threshold-based enhanced due diligence
+* Manual review workflow
+________________
+
+
+🗂️ 2. New / Updated Data Models
+________________
+
+
+🔹 Entity: KYCProfile
+Field
+	Type
+	Description
+	id
+	UUID
+	KYC ID
+	student_id
+	UUID
+	Linked student
+	full_name
+	String
+	Name
+	nic_passport
+	String
+	ID number
+	dob
+	Date
+	Date of birth
+	nationality
+	String
+	Nationality
+	address
+	String
+	Residential address
+	kyc_status
+	Enum
+	PENDING / VERIFIED / REJECTED
+	verified_at
+	Timestamp
+	Verification time
+	________________
+
+
+🔹 Entity: SourceOfFunds
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	student_id
+	UUID
+	Link
+	source_type
+	Enum
+	SALARY / BUSINESS / SAVINGS / LOAN / GIFT / OTHER
+	description
+	String
+	Additional details
+	declared_amount
+	Decimal
+	Amount declared
+	verified
+	Boolean
+	Verified flag
+	________________
+
+
+🔹 Entity: RiskAssessment
+Field
+	Type
+	Description
+	id
+	UUID
+	Risk ID
+	student_id
+	UUID
+	Link
+	risk_score
+	Integer
+	0–100
+	risk_level
+	Enum
+	LOW / MEDIUM / HIGH
+	pep_flag
+	Boolean
+	Politically exposed
+	aml_status
+	Enum
+	CLEAR / REVIEW_REQUIRED / BLOCKED
+	assessed_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: KYCReviewQueue
+Field
+	Type
+	Description
+	id
+	UUID
+	Queue ID
+	student_id
+	UUID
+	Link
+	reason
+	String
+	e.g. HIGH_VALUE_PAYMENT
+	status
+	Enum
+	PENDING / APPROVED / REJECTED
+	reviewer_id
+	UUID
+	Admin
+	reviewed_at
+	Timestamp
+	Time
+	________________
+________________
+
+
+⚙️ 3. System Behavior
+________________
+
+
+🔹 KYC Mandatory Rule
+IF kyc_status != VERIFIED
+THEN block_payment = TRUE
+________________
+
+
+🔹 Threshold Check
+Define:
+AML_THRESHOLD = configurable (e.g. 1,000,000 LKR)
+________________
+
+
+🔹 Enhanced Due Diligence Rule
+IF payment_amount > AML_THRESHOLD
+THEN
+   require_source_of_funds_documents = TRUE
+   send_to_review_queue = TRUE
+________________
+
+
+🔹 Risk Scoring Logic (Example)
+risk_score = 0
+
+
+IF payment_amount > threshold THEN +30
+IF source_type == CASH OR UNKNOWN THEN +20
+IF pep_flag == TRUE THEN +40
+
+
+IF risk_score >= 60 → HIGH
+IF risk_score >= 30 → MEDIUM
+ELSE → LOW
+________________
+
+
+🔹 AML Decision Logic
+IF risk_level == HIGH
+   THEN aml_status = BLOCKED
+ELSE IF risk_level == MEDIUM
+   THEN aml_status = REVIEW_REQUIRED
+ELSE
+   aml_status = CLEAR
+________________
+
+
+🔹 Payment Blocking Rule
+IF aml_status == BLOCKED
+   THEN payment_status = REJECTED
+________________
+
+
+🔹 Manual Review Workflow
+1. Case added to KYCReviewQueue
+2. Compliance officer reviews documents
+3. Decision:
+   * APPROVED → continue
+   * REJECTED → block account
+________________
+________________
+
+
+🖥️ 4. UI / Portal Updates
+________________
+
+
+KYC Status Display
+* PENDING → “Verification in Progress”
+* VERIFIED → “KYC Approved”
+* REJECTED → “Verification Failed”
+________________
+
+
+AML Alerts
+If high risk:
+“Your payment is under compliance review. Please upload additional documents.”
+________________
+________________
+
+
+⚠️ 5. Compliance Constraints
+________________
+
+
+Constraint 1
+* No enrollment without KYC verification
+________________
+
+
+Constraint 2
+* High-risk users cannot proceed
+________________
+
+
+Constraint 3
+* All KYC actions must be logged
+________________
+
+
+Constraint 4
+* Documents must be securely stored
+________________
+________________
+
+
+🔐 6. Audit & Evidence
+System must retain:
+* KYC documents
+* Risk scoring logs
+* Review decisions
+* Reviewer identity
+* Timestamped actions
+________________
+________________
+
+
+🎯 7. Updated Design Principle (V2.2)
+“All program participation must originate from verified identity and lawful source of funds.”
+________________
+
+
+✅ Final Outcome
+With this addition:
+* ✔ Regulatory exposure reduced
+* ✔ Fraud risk minimized
+* ✔ High-value transactions controlled
+* ✔ System becomes compliance-ready
+________________
+
+
+If you want next, I can:
+* Integrate this with payment gateway + fraud detection rules
+* Or create a full compliance module architecture (CBSL-aligned)
+📘 SDD Update – Student Program Ledger (SPL) V2.3 (MLM Compliance Module)
+________________
+
+
+🆕 1. Scope Additions
+* Earnings disclaimer enforcement
+* Sponsor tracking
+* Approved marketing control
+* Mis-selling detection
+* Penalty enforcement
+________________
+
+
+🗂️ 2. New / Updated Data Models
+________________
+
+
+🔹 Entity: ReferralProfile
+Field
+	Type
+	Description
+	id
+	UUID
+	Profile ID
+	student_id
+	UUID
+	Linked student
+	sponsor_id
+	UUID
+	Referring member
+	referral_status
+	Enum
+	ACTIVE / SUSPENDED / TERMINATED
+	joined_at
+	Timestamp
+	Join date
+	________________
+
+
+🔹 Entity: DisclaimerConsent
+Field
+	Type
+	Description
+	id
+	UUID
+	Consent ID
+	student_id
+	UUID
+	Link
+	accepted
+	Boolean
+	Must be TRUE
+	policy_version
+	String
+	Version
+	accepted_at
+	Timestamp
+	Time
+	ip_address
+	String
+	IP
+	device_info
+	String
+	Device
+	________________
+
+
+🔹 Entity: MarketingAsset
+Field
+	Type
+	Description
+	id
+	UUID
+	Asset ID
+	title
+	String
+	Name
+	content_url
+	String
+	Link
+	status
+	Enum
+	APPROVED / REVOKED
+	version
+	String
+	Version
+	________________
+
+
+🔹 Entity: ComplianceViolation
+Field
+	Type
+	Description
+	id
+	UUID
+	Violation ID
+	student_id
+	UUID
+	Offender
+	type
+	Enum
+	MISSELLING / UNAUTHORIZED_MARKETING / FALSE_CLAIM
+	description
+	String
+	Details
+	severity
+	Enum
+	LOW / MEDIUM / HIGH
+	status
+	Enum
+	OPEN / RESOLVED
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: PenaltyAction
+Field
+	Type
+	Description
+	id
+	UUID
+	Action ID
+	student_id
+	UUID
+	Link
+	action_type
+	Enum
+	WARNING / PAYOUT_SUSPENSION / ACCOUNT_FREEZE / TERMINATION
+	reason
+	String
+	Cause
+	applied_at
+	Timestamp
+	Time
+	________________
+________________
+
+
+⚙️ 3. System Behavior
+________________
+
+
+🔹 Mandatory Disclaimer Acceptance
+IF disclaimer_accepted != TRUE
+THEN block_referral_activation = TRUE
+________________
+
+
+🔹 Sponsor Tracking Rule
+ON student_signup:
+
+
+SET sponsor_id = input_sponsor_id
+STORE in ReferralProfile
+________________
+
+
+🔹 MLM Activation Rule
+IF payment_status == CONFIRMED
+AND disclaimer_accepted == TRUE
+THEN referral_status = ACTIVE
+ELSE referral_status = SUSPENDED
+________________
+
+
+🔹 Approved Marketing Enforcement
+IF marketing_asset.status != APPROVED
+THEN usage_prohibited = TRUE
+________________
+
+
+🔹 Violation Detection (Manual or Automated)
+Trigger when:
+* Complaint received
+* Monitoring detects misleading claim
+________________
+
+
+🔹 Penalty Logic
+IF violation_severity == HIGH
+   THEN apply ACCOUNT_FREEZE + PAYOUT_SUSPENSION
+ELSE IF severity == MEDIUM
+   THEN apply PAYOUT_SUSPENSION
+ELSE
+   apply WARNING
+________________
+
+
+🔹 MLM Payout Block Rule
+IF referral_status != ACTIVE
+OR penalty_active == TRUE
+THEN block_MLM_payout = TRUE
+________________
+________________
+
+
+🖥️ 4. UI / Portal Updates
+________________
+
+
+Disclaimer Screen (Before Activation)
+✔ Checkbox required:
+“I understand that earnings are not guaranteed and depend on my individual effort.”
+________________
+
+
+Referral Status Display
+* ACTIVE → “Eligible for referral benefits”
+* SUSPENDED → “Referral privileges temporarily suspended”
+* TERMINATED → “Referral access revoked”
+________________
+
+
+Compliance Alert Example
+“Your account is under review due to a compliance issue. Referral payouts are temporarily paused.”
+________________
+________________
+
+
+⚠️ 5. Compliance Constraints
+________________
+
+
+Constraint 1
+* No MLM participation without disclaimer acceptance
+________________
+
+
+Constraint 2
+* Only approved materials can be used
+________________
+
+
+Constraint 3
+* Violations must be logged and traceable
+________________
+
+
+Constraint 4
+* Penalties must be enforced automatically
+________________
+________________
+
+
+🔐 6. Audit & Evidence
+System must store:
+* Disclaimer acceptance logs
+* Sponsor relationships
+* Marketing material usage
+* Violation records
+* Penalty actions
+________________
+________________
+
+
+🎯 7. Updated Design Principle (V2.3)
+“Referral benefits are conditional, monitored, and strictly governed by compliance rules.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ Mis-selling risk reduced
+* ✔ Legal exposure minimized
+* ✔ Transparent earning expectations
+* ✔ Full traceability of referral behavior
+________________
+
+
+If you want next, I can:
+* Integrate this with MLM payout calculation engine (compliance-aware payouts)
+* Or create a full compliance dashboard design for administrators
+📘 SDD Update – Student Program Ledger (SPL) V2.4 (Data Ownership & Privacy Module)
+________________
+
+
+🆕 1. Scope Additions
+* Data ownership enforcement
+* Role-based access control (RBAC)
+* Consent management (separated)
+* Audit logging
+* Data access governance
+________________
+
+
+🗂️ 2. New / Updated Data Models
+________________
+
+
+🔹 Entity: DataOwnership
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	entity_name
+	String
+	e.g. Student Data
+	owner
+	Enum
+	BANK
+	processor
+	Enum
+	INSTITUTE
+	defined_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: UserRole
+Field
+	Type
+	Description
+	id
+	UUID
+	Role ID
+	role_name
+	Enum
+	BANK_ADMIN / INSTITUTE_ADMIN / ACADEMIC_STAFF / SUPPORT
+	permissions
+	JSON
+	Access rules
+	________________
+
+
+🔹 Entity: AccessControl
+Field
+	Type
+	Description
+	id
+	UUID
+	Entry ID
+	user_id
+	UUID
+	System user
+	role_id
+	UUID
+	Role
+	resource
+	String
+	Data object
+	access_type
+	Enum
+	READ / WRITE / UPDATE
+	granted_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: ConsentRecord (Enhanced)
+Add:
+Field
+	Type
+	Description
+	consent_type
+	Enum
+	EDUCATION / MARKETING
+	granted
+	Boolean
+	Status
+	________________
+
+
+🔹 Entity: AuditLog
+Field
+	Type
+	Description
+	id
+	UUID
+	Log ID
+	user_id
+	UUID
+	Actor
+	action
+	String
+	e.g. VIEW_STUDENT_DATA
+	resource
+	String
+	Data object
+	timestamp
+	Timestamp
+	Time
+	ip_address
+	String
+	IP
+	device_info
+	String
+	Device
+	________________
+________________
+
+
+⚙️ 3. System Behavior
+________________
+
+
+🔹 Data Ownership Rule
+ALL student_data.owner = TEMCO_BANK
+ALL processing_by_institute = CONTROLLED
+________________
+
+
+🔹 Role-Based Access Control (RBAC)
+IF user_role == INSTITUTE_ADMIN
+   THEN allow access ONLY to academic_data
+   DENY access to financial_data
+________________
+
+
+🔹 Consent Enforcement
+IF consent_type == MARKETING AND granted != TRUE
+   THEN block_marketing_usage
+________________
+
+
+🔹 Data Access Logging
+ON any data access:
+
+
+CREATE AuditLog entry
+________________
+
+
+🔹 Unauthorized Access Prevention
+IF access_attempt WITHOUT permission
+   THEN deny AND log violation
+________________
+________________
+
+
+🖥️ 4. UI / Portal Updates
+________________
+
+
+Consent Section
+* ☐ I consent to academic data processing
+* ☐ I consent to marketing communications
+________________
+
+
+Admin Dashboard
+* View access logs
+* Filter by:
+   * user
+   * action
+   * date
+________________
+
+
+Security Alerts
+“Unauthorized access attempt detected and logged.”
+________________
+________________
+
+
+⚠️ 5. Compliance Constraints
+________________
+
+
+Constraint 1
+* Institute cannot access financial records
+________________
+
+
+Constraint 2
+* Marketing requires explicit consent
+________________
+
+
+Constraint 3
+* All data access must be logged
+________________
+
+
+Constraint 4
+* No data sharing without authorization
+________________
+________________
+
+
+🔐 6. Audit Requirements
+System must track:
+* Who accessed data
+* What data was accessed
+* When it was accessed
+* From where (IP/device)
+________________
+________________
+
+
+🎯 7. Updated Design Principle (V2.4)
+“Data ownership remains with the bank; all processing is controlled, auditable, and consent-driven.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ Legal clarity between Bank & Institute
+* ✔ Data protection compliance
+* ✔ Reduced dispute risk
+* ✔ Full traceability and accountability
+________________
+
+
+If you want next, I can:
+* Align this with Sri Lanka Data Protection Act (No. 9 of 2022)
+* Or design a full security architecture (encryption, API access, token control)
+
+
+📘 SDD Update – Student Program Ledger (SPL) V2.5 (Product Definition Enforcement)
+________________
+
+
+🆕 1. Scope Additions
+* Product definition enforcement across system
+* Standardized messaging control
+* Misclassification prevention (education vs financial)
+* UI, consent, and training alignment
+________________
+
+
+🗂️ 2. New Data Models
+________________
+
+
+🔹 Entity: ProductDefinition
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	statement
+	String
+	Official definition
+	version
+	String
+	Version control
+	active
+	Boolean
+	Active flag
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: DefinitionAcceptance
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	student_id
+	UUID
+	Link
+	definition_version
+	String
+	Version
+	accepted_at
+	Timestamp
+	Time
+	ip_address
+	String
+	IP
+	device_info
+	String
+	Device
+	________________
+________________
+
+
+⚙️ 3. System Behavior
+________________
+
+
+🔹 Mandatory Definition Display
+Before:
+* Registration
+* Payment
+* MLM activation
+System must display:
+“This is a prepaid education program. No financial returns are offered.”
+________________
+
+
+🔹 Acceptance Rule
+IF definition_acceptance != TRUE
+THEN block_registration = TRUE
+    block_payment = TRUE
+________________
+
+
+🔹 Version Control Rule
+IF ProductDefinition.version is updated
+THEN require re-acceptance from user
+________________
+
+
+🔹 UI Enforcement Rule
+ALL UI modules MUST use ProductDefinition.statement
+NO custom wording allowed
+________________
+
+
+🔹 MLM Integration Rule
+IF user attempts MLM activation
+THEN enforce definition acceptance again
+________________
+________________
+
+
+🖥️ 4. UI / Portal Updates
+________________
+
+
+Registration Screen
+✔ Checkbox:
+“I understand that this is a prepaid education program and does not offer financial returns.”
+________________
+
+
+Payment Screen
+Display banner:
+“This is a prepaid education program. No financial returns are offered.”
+________________
+
+
+MLM Activation Screen
+Reconfirmation required:
+* Checkbox + timestamp
+________________
+________________
+
+
+⚠️ 5. Compliance Constraints
+________________
+
+
+Constraint 1
+* No alternative wording allowed anywhere
+________________
+
+
+Constraint 2
+* Definition must be visible at all critical steps
+________________
+
+
+Constraint 3
+* Acceptance must be recorded with audit data
+________________
+________________
+
+
+🔐 6. Audit & Evidence
+System must store:
+* Definition version accepted
+* Timestamp
+* IP/device
+* Context (registration / payment / MLM activation)
+________________
+________________
+
+
+🎯 7. Updated Design Principle (V2.5)
+“The system enforces a single, consistent product definition across all user interactions.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ Eliminates classification ambiguity
+* ✔ Prevents misrepresentation risk
+* ✔ Strengthens legal defensibility
+* ✔ Ensures consistent communication
+📘 SDD Update – Student Program Ledger (SPL) V2.6 (SOP & Staff Alignment Module)
+________________
+
+
+🆕 1. Scope Additions
+* Central SOP repository (Sales, Support, Compliance)
+* Mandatory training modules linked to SOPs
+* Certification & access gating (no certification → no critical actions)
+* Version control & re-certification on updates
+* Audit logs for SOP access and staff actions
+________________
+
+
+🧩 2. Core Principle
+“Every staff action must follow an approved SOP, and access to actions is granted only to certified users.”
+________________
+
+
+🗂️ 3. Data Models
+________________
+
+
+🔹 Entity: SOPDocument
+Field
+	Type
+	Description
+	id
+	UUID
+	SOP ID
+	title
+	String
+	e.g., Sales SOP
+	category
+	Enum
+	SALES / SUPPORT / COMPLIANCE
+	content
+	Text / HTML
+	SOP content
+	version
+	String
+	Version
+	status
+	Enum
+	ACTIVE / ARCHIVED
+	effective_from
+	Date
+	Start date
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: TrainingModule
+Field
+	Type
+	Description
+	id
+	UUID
+	Module ID
+	sop_id
+	UUID
+	Linked SOP
+	title
+	String
+	Module name
+	content_url
+	String
+	Video/lesson link
+	quiz_required
+	Boolean
+	TRUE/FALSE
+	passing_score
+	Integer
+	e.g., 80
+	version
+	String
+	Version
+	________________
+
+
+🔹 Entity: StaffProfile
+Field
+	Type
+	Description
+	id
+	UUID
+	Staff ID
+	name
+	String
+	Name
+	role
+	Enum
+	BANK_ADMIN / INSTITUTE_ADMIN / SALES_AGENT / SUPPORT_AGENT
+	status
+	Enum
+	ACTIVE / SUSPENDED
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: CertificationRecord
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	staff_id
+	UUID
+	Link
+	module_id
+	UUID
+	Training module
+	score
+	Integer
+	Score
+	passed
+	Boolean
+	TRUE/FALSE
+	certified_at
+	Timestamp
+	Time
+	expiry_date
+	Date
+	Expiry
+	________________
+
+
+🔹 Entity: SOPAccessLog
+Field
+	Type
+	Description
+	id
+	UUID
+	Log ID
+	staff_id
+	UUID
+	User
+	sop_id
+	UUID
+	SOP
+	action
+	Enum
+	VIEW / ACKNOWLEDGE
+	timestamp
+	Timestamp
+	Time
+	________________
+________________
+
+
+⚙️ 4. System Behavior
+________________
+
+
+🔹 SOP Availability Rule
+ALL staff MUST have access to latest ACTIVE SOPDocument
+________________
+
+
+🔹 Mandatory SOP Acknowledgment
+IF staff has NOT acknowledged latest SOP version
+THEN restrict critical actions
+________________
+
+
+🔹 Training Requirement Rule
+IF CertificationRecord.passed != TRUE
+THEN block role-specific actions
+________________
+
+
+🔹 Certification Enforcement
+Examples:
+IF role == SALES_AGENT AND not certified(SALES_SOP)
+THEN block student_registration
+IF role == SUPPORT_AGENT AND not certified(SUPPORT_SOP)
+THEN block ticket_resolution
+IF role == COMPLIANCE AND not certified(COMPLIANCE_SOP)
+THEN block review_actions
+________________
+
+
+🔹 Re-Certification Rule
+IF SOPDocument.version updated
+THEN invalidate old certifications
+AND require re-certification
+________________
+
+
+🔹 Expiry Rule
+IF current_date > certification.expiry_date
+THEN certification_status = EXPIRED
+AND restrict actions
+________________
+________________
+
+
+🖥️ 5. UI / Portal Components
+________________
+
+
+🔹 Staff Dashboard
+* Assigned SOPs
+* Training modules
+* Certification status:
+   * ✔ Certified
+   * ⚠ Expired
+   * ❌ Not completed
+________________
+
+
+🔹 SOP Viewer
+* Version display
+* “Acknowledge” button
+* Download option
+________________
+
+
+🔹 Training Interface
+* Video/content
+* Quiz
+* Score display
+________________
+
+
+🔹 Access Warning
+“You must complete and pass the required training before performing this action.”
+________________
+________________
+
+
+📘 6. SOP Content (Embedded)
+________________
+
+
+🔹 SALES SOP (Standardized)
+Core Rule:
+Always describe the product as:
+“This is a prepaid education program. No financial returns are offered.”
+Allowed:
+* Explain academic benefits
+* Explain MEC as education value
+Prohibited:
+* Saying “investment”, “returns”, “interest”
+* Promising income
+________________
+
+
+🔹 SUPPORT SOP
+Core Rule:
+* Always refer to:
+   * Agreement clauses
+   * System records
+Required Actions:
+* Log every complaint
+* Use predefined response templates
+________________
+
+
+🔹 COMPLIANCE SOP
+Core Rule:
+* Monitor:
+   * MLM behavior
+   * marketing claims
+   * payment irregularities
+Required:
+* Record violations
+* Apply penalties consistently
+________________
+________________
+
+
+⚠️ 7. Compliance Constraints
+________________
+
+
+Constraint 1
+* No staff action without certification
+________________
+
+
+Constraint 2
+* Only latest SOP version valid
+________________
+
+
+Constraint 3
+* All SOP interactions logged
+________________
+________________
+
+
+🔐 8. Audit & Evidence
+System must store:
+* SOP versions
+* Staff acknowledgments
+* Training completion records
+* Certification history
+* Access logs
+________________
+________________
+
+
+🎯 9. Updated Design Principle (V2.6)
+“System behavior is controlled by SOP compliance, not individual interpretation.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ Eliminates staff inconsistency
+* ✔ Standardizes communication
+* ✔ Reduces legal & compliance risk
+* ✔ Makes training enforceable via system
+* ✔ Fully auditable operations
+________________
+
+
+If you want next, I can:
+* Integrate this with a compliance scoring dashboard (risk score per staff/user)
+* Or design automated alerts when SOP violations occur
+📘 SDD Update – Student Program Ledger (SPL) V2.7 (Commission Liability & Cash Flow Control)
+________________
+
+
+🆕 1. Scope Additions
+* Commission Reserve Account (CRA)
+* Monthly Commission Pool calculation
+* Hard cap: payouts ≤ available_pool
+* Automated pro-rating when demand exceeds pool
+* Payout gating based on payment & compliance status
+* Full audit trail for pool usage and payouts
+________________
+
+
+🧩 2. Core Principle
+“All commission payouts are limited by the available commission pool; the system enforces this limit deterministically.”
+________________
+
+
+🗂️ 3. New / Updated Data Models
+________________
+
+
+🔹 Entity: CommissionReserveAccount (CRA)
+Field
+	Type
+	Description
+	id
+	UUID
+	Account ID
+	period
+	String
+	e.g., 2026-04
+	opening_balance
+	Decimal
+	Carry forward
+	inflow_amount
+	Decimal
+	From confirmed payments (commission portion)
+	adjustments
+	Decimal
+	Manual/system adjustments
+	available_pool
+	Decimal
+	opening + inflow + adjustments
+	committed_payout
+	Decimal
+	Sum of approved payouts
+	closing_balance
+	Decimal
+	available_pool − committed_payout
+	status
+	Enum
+	OPEN / LOCKED / CLOSED
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: CommissionEarning
+Field
+	Type
+	Description
+	id
+	UUID
+	Earning ID
+	account_id
+	UUID
+	Student/agent
+	period
+	String
+	Month
+	gross_amount
+	Decimal
+	Before caps
+	eligible_amount
+	Decimal
+	After eligibility filters
+	prorated_amount
+	Decimal
+	After pro-rating
+	status
+	Enum
+	PENDING / APPROVED / PAID / REJECTED
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: CommissionPayout
+Field
+	Type
+	Description
+	id
+	UUID
+	Payout ID
+	earning_id
+	UUID
+	Link
+	amount
+	Decimal
+	Final payable
+	payout_status
+	Enum
+	INITIATED / APPROVED / PAID / BLOCKED
+	processed_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: CommissionPolicy
+Field
+	Type
+	Description
+	id
+	UUID
+	Policy ID
+	commission_rate
+	Decimal
+	e.g., 0.10 (10%)
+	carry_forward_enabled
+	Boolean
+	TRUE/FALSE
+	min_payout_threshold
+	Decimal
+	Optional
+	version
+	String
+	Version
+	________________
+________________
+
+
+⚙️ 4. System Behavior
+________________
+
+
+🔹 4.1 Pool Creation (Per Period)
+period = YYYY-MM
+
+
+opening_balance = last_period.closing_balance
+inflow_amount = SUM(confirmed_payments × commission_rate)
+
+
+available_pool = opening_balance + inflow_amount + adjustments
+
+
+CREATE CommissionReserveAccount(period)
+Note: confirmed_payments = only payments with payment_status = CONFIRMED (and not under chargeback/freeze).
+________________
+
+
+🔹 4.2 Eligibility Filter
+Before calculating payouts:
+FOR each participant:
+
+
+IF payment_status != CONFIRMED OR account_freeze_status == TRUE
+  OR academic_status != ACTIVE
+  OR referral_status != ACTIVE
+THEN
+  eligible_amount = 0
+ELSE
+  eligible_amount = gross_amount
+________________
+
+
+🔹 4.3 Total Demand vs Pool
+total_demand = SUM(eligible_amount for period)
+
+
+IF total_demand <= available_pool
+   THEN prorated_amount = eligible_amount
+ELSE
+   proration_factor = available_pool / total_demand
+   prorated_amount = eligible_amount × proration_factor
+________________
+
+
+🔹 4.4 Hard Cap Enforcement
+total_payout = SUM(prorated_amount)
+
+
+ASSERT total_payout <= available_pool
+System must block any attempt that violates this.
+________________
+
+
+🔹 4.5 Commit & Close
+committed_payout = total_payout
+closing_balance = available_pool - committed_payout
+
+
+SET CRA.status = LOCKED → after approvals
+SET CRA.status = CLOSED → after payouts executed
+________________
+
+
+🔹 4.6 Carry Forward (Optional)
+IF carry_forward_enabled == TRUE
+   next_period.opening_balance = current_period.closing_balance
+ELSE
+   next_period.opening_balance = 0
+________________
+
+
+🔹 4.7 Payout Gating
+IF earning.prorated_amount >= min_payout_threshold
+   THEN payout_status = APPROVED
+ELSE
+   payout_status = BLOCKED (carry forward optional)
+________________
+
+
+🔹 4.8 Chargeback / Freeze Impact
+IF account_freeze_status == TRUE OR payment_status == CHARGEBACK
+THEN
+   exclude from pool inflow (if not yet counted)
+   set earning.status = REJECTED or HOLD
+   reverse/uncommit if not PAID
+________________
+________________
+
+
+🖥️ 5. UI / Portal Updates
+________________
+
+
+🔹 Admin Dashboard – Commission Pool
+* Period: 2026-04
+* Opening Balance: X
+* Inflow: Y
+* Available Pool: Z
+* Total Demand: D
+* Proration Factor: P
+* Committed Payout: C
+* Closing Balance: B
+________________
+
+
+🔹 User View (MLM Earnings)
+* Gross Earning: Rs. X
+* Eligible Earning: Rs. Y
+* Proration Applied: Yes/No
+* Final Payable: Rs. Z
+Tooltip: “Payouts are adjusted proportionally based on the available commission pool.”
+________________
+
+
+⚠️ 6. Constraints
+________________
+
+
+Constraint 1
+* No payout if pool insufficient without pro-rating
+Constraint 2
+* No negative pool balance
+Constraint 3
+* Only CONFIRMED & compliant accounts included
+Constraint 4
+* Pool must be period-locked before payout execution
+________________
+
+
+🔐 7. Audit & Evidence
+System must log:
+* Pool calculations (inputs & outputs)
+* Proration factor and rationale
+* Inclusion/exclusion decisions per account
+* Payment statuses used for inflow
+* Approval and payout timestamps
+________________
+
+
+🎯 8. Updated Design Principle (V2.7)
+“Commission payouts are strictly bounded by available funds and adjusted proportionally when demand exceeds supply.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ No overpayment risk
+* ✔ Fully automated financial discipline
+* ✔ Transparent and explainable payouts
+* ✔ Resilient under growth and variability
+________________
+
+
+If you want, I can next:
+* Integrate this with a real-time earnings preview (pre-proration vs estimated payout)
+* Or add a stress-testing simulator to forecast pool behavior under different growth scenarios.
+📘 SDD Update – Student Program Ledger (SPL) V2.8 (Dispute Management Module)
+________________
+
+
+🆕 1. Scope Additions
+* Central DisputeTicket module
+* Standard dispute lifecycle (internal review → escalation → resolution → optional arbitration)
+* Category-based handling (Refund / MLM / Academic / Payment / Other)
+* SLA tracking and escalation rules
+* Evidence attachment & audit logs
+* Outcome enforcement (refund adjustment, payout correction, status update)
+________________
+
+
+🧩 2. Core Principle
+“All disputes are tracked, time-bound, evidence-based, and resolved through a standardized workflow.”
+________________
+
+
+🗂️ 3. Data Models
+________________
+
+
+🔹 Entity: DisputeTicket
+Field
+	Type
+	Description
+	id
+	UUID
+	Ticket ID
+	account_id
+	UUID
+	Student account
+	category
+	Enum
+	REFUND / MLM / ACADEMIC / PAYMENT / OTHER
+	subject
+	String
+	Short title
+	description
+	Text
+	Detailed issue
+	status
+	Enum
+	OPEN / UNDER_REVIEW / ESCALATED / RESOLVED / REJECTED / CLOSED
+	priority
+	Enum
+	LOW / MEDIUM / HIGH
+	created_at
+	Timestamp
+	Time
+	updated_at
+	Timestamp
+	Time
+	created_by
+	UUID
+	Student/Staff
+	assigned_to
+	UUID
+	Handler
+	sla_due_at
+	Timestamp
+	Resolution deadline
+	________________
+
+
+🔹 Entity: DisputeEvidence
+Field
+	Type
+	Description
+	id
+	UUID
+	Evidence ID
+	ticket_id
+	UUID
+	Link
+	file_url
+	String
+	Document/Image
+	description
+	String
+	Notes
+	uploaded_by
+	UUID
+	User
+	uploaded_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: DisputeActionLog
+Field
+	Type
+	Description
+	id
+	UUID
+	Log ID
+	ticket_id
+	UUID
+	Link
+	action
+	String
+	e.g., STATUS_CHANGED
+	from_status
+	String
+	Previous
+	to_status
+	String
+	New
+	performed_by
+	UUID
+	User
+	timestamp
+	Timestamp
+	Time
+	remarks
+	String
+	Notes
+	________________
+
+
+🔹 Entity: DisputeResolution
+Field
+	Type
+	Description
+	id
+	UUID
+	Resolution ID
+	ticket_id
+	UUID
+	Link
+	outcome
+	Enum
+	APPROVED / PARTIAL / REJECTED
+	resolution_summary
+	Text
+	Explanation
+	financial_adjustment
+	Decimal
+	Refund/payout correction
+	approved_by
+	UUID
+	Authority
+	resolved_at
+	Timestamp
+	Time
+	________________
+________________
+
+
+⚙️ 4. System Behavior
+________________
+
+
+🔹 4.1 Ticket Creation
+ON dispute_submission:
+
+
+CREATE DisputeTicket
+SET status = OPEN
+SET sla_due_at = created_at + SLA_DURATION
+________________
+
+
+🔹 4.2 Assignment
+IF category == REFUND → assign to FINANCE_TEAM
+IF category == MLM → assign to MLM_COMPLIANCE
+IF category == ACADEMIC → assign to ACADEMIC_TEAM
+________________
+
+
+🔹 4.3 Internal Review Stage
+SET status = UNDER_REVIEW
+
+
+COLLECT:
+   - system logs
+   - payment records
+   - ledger entries
+   - user evidence
+________________
+
+
+🔹 4.4 Decision Logic
+IF valid_claim
+   THEN outcome = APPROVED or PARTIAL
+ELSE
+   outcome = REJECTED
+________________
+
+
+🔹 4.5 Escalation Rule
+IF no_resolution AND current_time > sla_due_at
+THEN
+   SET status = ESCALATED
+   notify higher authority
+________________
+
+
+🔹 4.6 Resolution Enforcement
+IF outcome == APPROVED
+   THEN apply financial_adjustment
+        update ledger / payout / refund
+
+
+SET status = RESOLVED
+________________
+
+
+🔹 4.7 Closure
+AFTER user acknowledgement OR timeout
+SET status = CLOSED
+________________
+
+
+🔹 4.8 Arbitration (Optional Final Step)
+IF user disputes resolution
+THEN mark case = ARBITRATION
+AND export full audit record
+________________
+
+
+🖥️ 5. UI / Portal Components
+________________
+
+
+🔹 Student Portal
+* “Raise Dispute” button
+* Select category
+* Upload evidence
+* Track status timeline
+________________
+
+
+🔹 Admin Dashboard
+* Ticket queue
+* Filter by:
+   * category
+   * priority
+   * SLA breach
+* Action buttons:
+   * Approve / Reject / Escalate
+________________
+
+
+🔹 Status Timeline View
+* OPEN → UNDER_REVIEW → RESOLVED → CLOSED
+* With timestamps and notes
+________________
+________________
+
+
+⚠️ 6. SLA Rules
+Priority
+	Resolution Time
+	HIGH
+	3 days
+	MEDIUM
+	7 days
+	LOW
+	14 days
+	________________
+
+
+⚠️ 7. Constraints
+________________
+
+
+Constraint 1
+* No financial adjustment without resolution approval
+________________
+
+
+Constraint 2
+* All actions must be logged
+________________
+
+
+Constraint 3
+* SLA breach must trigger escalation
+________________
+
+
+Constraint 4
+* Closed tickets are immutable
+________________
+________________
+
+
+🔐 8. Audit & Evidence
+System must store:
+* All dispute records
+* Evidence files
+* Decision logs
+* Financial adjustments
+* User acknowledgments
+________________
+________________
+
+
+🎯 9. Updated Design Principle (V2.8)
+“Every dispute follows a standardized, time-bound, and auditable resolution process.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ Structured dispute handling
+* ✔ Reduced legal exposure
+* ✔ Transparent decisions
+* ✔ Faster issue resolution
+* ✔ Full traceability
+________________
+
+
+If you want next, I can:
+* Add a legal dispute clause aligned with this workflow
+* Or integrate this with refund + commission + academic modules for auto-resolution rules
+📘 SDD Update – Student Program Ledger (SPL) V2.9 (Knowledge Continuity & Documentation Governance)
+________________
+
+
+🆕 1. Scope Additions
+* Central Architecture Documentation Repository
+* Business Rules Registry (system-readable + human-readable)
+* Versioned Specifications (SDD) with change tracking
+* Ownership & accountability mapping
+* Mandatory documentation for every module
+* Onboarding & knowledge transfer support
+________________
+
+
+🧩 2. Core Principle
+“System knowledge must reside in structured, versioned documentation—not in individuals.”
+________________
+
+
+🗂️ 3. Data Models
+________________
+
+
+🔹 Entity: SystemDocument
+Field
+	Type
+	Description
+	id
+	UUID
+	Document ID
+	title
+	String
+	Name
+	category
+	Enum
+	ARCHITECTURE / BUSINESS_RULE / API / PROCESS / SOP
+	content
+	Text / Markdown
+	Full content
+	version
+	String
+	Version
+	status
+	Enum
+	ACTIVE / ARCHIVED
+	created_by
+	UUID
+	Author
+	approved_by
+	UUID
+	Reviewer
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: BusinessRule
+Field
+	Type
+	Description
+	id
+	UUID
+	Rule ID
+	name
+	String
+	Rule name
+	description
+	Text
+	Explanation
+	rule_logic
+	Text
+	Pseudo/code logic
+	module
+	String
+	SPL / MLM / PAYMENT
+	version
+	String
+	Version
+	active
+	Boolean
+	TRUE/FALSE
+	________________
+
+
+🔹 Entity: SpecVersion
+Field
+	Type
+	Description
+	id
+	UUID
+	Version ID
+	module_name
+	String
+	e.g., SPL
+	version
+	String
+	v2.9
+	change_summary
+	Text
+	Changes
+	effective_date
+	Date
+	Start date
+	approved_by
+	UUID
+	Authority
+	________________
+
+
+🔹 Entity: ModuleOwnership
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	module_name
+	String
+	SPL / MLM / PAYMENT
+	owner_role
+	Enum
+	TECH_LEAD / PRODUCT_OWNER / COMPLIANCE
+	backup_owner
+	UUID
+	Secondary person
+	________________
+________________
+
+
+⚙️ 4. System Behavior
+________________
+
+
+🔹 Documentation Requirement Rule
+FOR every system module:
+
+
+IF no SystemDocument exists
+THEN block deployment
+________________
+
+
+🔹 Business Rule Registration
+ALL critical logic MUST be stored in BusinessRule table
+AND linked to module
+________________
+
+
+🔹 Version Control Enforcement
+ON any change to logic:
+
+
+CREATE new SpecVersion
+MARK previous version as ARCHIVED
+________________
+
+
+🔹 Approval Workflow
+IF document.status != APPROVED
+THEN cannot be used in production
+________________
+
+
+🔹 Ownership Assignment
+FOR each module:
+
+
+ASSIGN primary owner AND backup owner
+________________
+
+
+🔹 Knowledge Access Rule
+ALL staff MUST have read access to:
+   - SOP
+   - Business rules
+   - system architecture
+________________
+
+
+🔹 Change Traceability
+ON any system update:
+
+
+LOG:
+   - who changed
+   - what changed
+   - why changed
+________________
+________________
+
+
+🖥️ 5. UI / Portal Components
+________________
+
+
+🔹 Documentation Portal
+* Searchable documents
+* Filter by:
+   * module
+   * version
+   * category
+________________
+
+
+🔹 Version History View
+* Show:
+   * current version
+   * previous versions
+   * change summary
+________________
+
+
+🔹 Business Rule Viewer
+* Human explanation
+* System logic (pseudo/code)
+________________
+
+
+🔹 Ownership Dashboard
+* Module → Owner → Backup
+* Contact visibility
+________________
+________________
+
+
+⚠️ 6. Constraints
+________________
+
+
+Constraint 1
+* No undocumented feature allowed
+________________
+
+
+Constraint 2
+* No production change without version update
+________________
+
+
+Constraint 3
+* Every module must have:
+   * owner
+   * backup owner
+________________
+
+
+Constraint 4
+* Documentation must be accessible system-wide
+________________
+________________
+
+
+🔐 7. Audit & Evidence
+System must track:
+* Document versions
+* Change logs
+* Approval records
+* Ownership mapping
+* Access history
+________________
+________________
+
+
+🎯 8. Updated Design Principle (V2.9)
+“System continuity is ensured through documented knowledge, not individual dependency.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ No knowledge loss risk
+* ✔ Easy onboarding of new staff
+* ✔ Fully traceable system evolution
+* ✔ Reduced operational dependency
+* ✔ Long-term scalability
+________________
+
+
+⚡ Final Insight
+You now convert:
+👉 “People-dependent system”
+➡️ into
+👉 “Process + documentation-driven system”
+________________
+
+
+If you want next, I can:
+* Combine all versions (V2.1–V2.9) into a single master SDD document
+* Or design a governance layer (roles, approvals, control hierarchy)
+📘 SDD Update – Student Program Ledger (SPL) V2.10 (Technology Portability & Anti Lock-in)
+________________
+
+
+🆕 1. Scope Additions
+* Standard technology stack definition
+* Data export capability (full + incremental)
+* Open API access layer (JAX-RS आधारित)
+* External backup database strategy
+* Migration readiness requirements
+* Vendor-independent architecture
+________________
+
+
+🧩 2. Core Principle
+“System must be fully portable—data, logic, and interfaces must not depend on any proprietary platform.”
+________________
+
+
+🏗️ 3. Approved Technology Stack
+________________
+
+
+🔹 Frontend
+* React (SPA architecture)
+🔹 Backend
+* JAX-RS (REST APIs)
+* EJB (business logic layer)
+* JPA (ORM layer)
+🔹 Application Server
+* WildFly Server
+🔹 Database
+* MariaDB
+🔹 Integration
+* REST APIs (JSON आधारित)
+________________
+
+
+🗂️ 4. Data Portability Requirements
+________________
+
+
+🔹 Full Data Export
+System must support:
+EXPORT ALL DATA:
+   - student accounts
+   - ledger entries
+   - payments
+   - MLM tree
+   - KYC data
+   - audit logs
+Formats:
+* JSON
+* CSV
+* SQL dump
+________________
+
+
+🔹 Incremental Export
+EXPORT WHERE updated_at > last_export_time
+________________
+
+
+🔹 Export API
+GET /api/export/full
+GET /api/export/incremental
+________________
+________________
+
+
+🔗 5. API Access Requirements
+________________
+
+
+🔹 Open API Layer
+All core functions must be accessible via REST:
+Examples:
+GET /students
+GET /ledger/{id}
+POST /payments
+GET /mlm/tree
+________________
+
+
+🔹 API Rules
+* JSON आधारित responses
+* Stateless design
+* Versioned endpoints:
+/api/v1/...
+________________
+
+
+🔹 Authentication
+* Token-based (JWT recommended)
+________________
+________________
+
+
+💾 6. External Backup Strategy
+________________
+
+
+🔹 Primary Database
+* MariaDB (production)
+________________
+
+
+🔹 Backup Database
+* Separate instance (external server/cloud)
+________________
+
+
+🔹 Backup Rules
+DAILY full backup
+HOURLY incremental backup
+________________
+
+
+🔹 Restore Testing
+RUN restore_test monthly
+VERIFY data integrity
+________________
+________________
+
+
+🔄 7. Migration Readiness
+________________
+
+
+🔹 Database Independence
+* Avoid:
+   * vendor-specific SQL
+* Use:
+   * standard JPA queries
+________________
+
+
+🔹 Service Layer Isolation
+ALL business logic MUST reside in EJB layer
+NOT in UI or database
+________________
+
+
+🔹 No Hard Dependencies
+* No proprietary no-code tools
+* No vendor-locked services
+________________
+
+
+🔹 Containerization (Recommended)
+* Docker समर्थन
+* Environment स्वतंत्र deployment
+________________
+________________
+
+
+🖥️ 8. Admin UI Features
+________________
+
+
+🔹 Data Export Panel
+* Export:
+   * Full data
+   * Selected modules
+* Download formats:
+   * CSV / JSON
+________________
+
+
+🔹 Backup Status Dashboard
+* Last backup time
+* Backup success/failure
+* Restore test status
+________________
+________________
+
+
+⚠️ 9. Constraints
+________________
+
+
+Constraint 1
+* No module without API access
+________________
+
+
+Constraint 2
+* All data must be exportable
+________________
+
+
+Constraint 3
+* Backup must be automated
+________________
+
+
+Constraint 4
+* System must be deployable on any standard Java EE server
+________________
+________________
+
+
+🔐 10. Audit & Evidence
+System must track:
+* Export logs
+* Backup logs
+* Restore test logs
+* API access logs
+________________
+________________
+
+
+🎯 11. Updated Design Principle (V2.10)
+“System portability is guaranteed through open standards, exportable data, and decoupled architecture.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ No vendor lock-in risk
+* ✔ Easy migration to new systems
+* ✔ Full data ownership retained
+* ✔ Scalable enterprise architecture
+* ✔ Future-proof technology stack
+________________
+
+
+⚡ Final Insight
+You have now moved from:
+❌ “No-code dependency risk”
+➡️
+✅ “Enterprise-grade, portable system architecture”
+________________
+
+
+If you want next, I can:
+* Design the full system architecture diagram (React + JAX-RS + EJB + DB layers)
+* Or generate a starter project structure (Maven modules + package layout)
+📘 8. SDD Update – V2.11 (Student Outcome Assurance Module)
+________________
+
+
+🆕 Scope
+* Outcome tracking
+* Graduation timeline monitoring
+* External dependency tracking
+* KPI reporting
+________________
+
+
+⚙️ System Rules
+________________
+
+
+🔹 Outcome Tracking
+ON student_completion:
+
+
+CREATE StudentOutcome
+SET outcome_status = PENDING
+________________
+
+
+🔹 KPI Calculation
+employment_rate = employed / completed
+completion_rate = completed / enrolled
+________________
+
+
+🔹 Delay Monitoring
+IF delay_days > threshold
+THEN flag = TRUE
+AND notify admin
+________________
+
+
+🔹 External Tracking
+IF certificate_status != ISSUED
+THEN show pending_state
+________________
+________________
+
+
+🖥️ UI Additions
+________________
+
+
+Student Portal
+* Graduation progress bar
+* External university status
+* Expected completion date
+________________
+
+
+Admin Dashboard
+* Completion rate
+* Employment rate
+* Delay alerts
+________________
+________________
+
+
+🎯 9. Final Positioning
+Now your model becomes:
+“Education outcomes are tracked, verified, and transparently reported.”
+________________
+
+
+✅ Final Result
+With this:
+* ✔ You don’t rely on claims → you show data
+* ✔ You manage external delays → not hide them
+* ✔ You convert reputation → measurable system
+________________
+
+
+⚡ Final Insight
+Your strongest advantage is:
+👉 You already have real results
+Now you’ve turned them into:
+👉 A system that continuously proves those results
+📘 SDD Update – Student Program Ledger (SPL) V2.12 (Growth Throttle & Capacity Control Module)
+________________
+
+
+🆕 1. Scope Additions
+* Monthly intake limit (global + per batch)
+* MLM vs Direct channel allocation control
+* Real-time seat availability tracking
+* Auto-throttling of registrations
+* Waitlist management system
+* Capacity-based enrollment approval
+________________
+
+
+🧩 2. Core Principle
+“Student intake must never exceed defined academic and operational capacity.”
+________________
+
+
+📊 3. Key Rule
+max_new_students_per_month = configurable_limit
+Example:
+* 500 students/month
+________________
+
+
+🗂️ 4. Data Models
+________________
+
+
+🔹 Entity: IntakeCapacity
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	period
+	String
+	YYYY-MM
+	max_capacity
+	Integer
+	Total allowed
+	mlm_quota
+	Integer
+	MLM seats
+	direct_quota
+	Integer
+	Direct seats
+	allocated_count
+	Integer
+	Current usage
+	status
+	Enum
+	OPEN / FULL / CLOSED
+	________________
+________________
+
+
+🔹 Entity: EnrollmentRequest
+Field
+	Type
+	Description
+	id
+	UUID
+	Request ID
+	student_id
+	UUID
+	Student
+	channel
+	Enum
+	MLM / DIRECT
+	status
+	Enum
+	PENDING / APPROVED / WAITLISTED / REJECTED
+	created_at
+	Timestamp
+	Time
+	________________
+________________
+
+
+🔹 Entity: Waitlist
+Field
+	Type
+	Description
+	id
+	UUID
+	Waitlist ID
+	student_id
+	UUID
+	Student
+	position
+	Integer
+	Queue position
+	created_at
+	Timestamp
+	Time
+	________________
+________________
+
+
+⚙️ 5. System Behavior
+________________
+
+
+🔹 5.1 Capacity Check on Enrollment
+IF allocated_count < max_capacity
+   THEN allow_enrollment
+ELSE
+   move_to_waitlist
+________________
+
+
+🔹 5.2 Channel Quota Control
+IF channel == MLM AND mlm_count >= mlm_quota
+   THEN WAITLIST
+IF channel == DIRECT AND direct_count >= direct_quota
+   THEN WAITLIST
+________________
+
+
+🔹 5.3 Allocation Update
+ON enrollment_approved:
+
+
+allocated_count += 1
+
+
+IF allocated_count == max_capacity
+   SET status = FULL
+________________
+
+
+🔹 5.4 Waitlist Handling
+ON seat_available:
+
+
+SELECT next_student FROM waitlist ORDER BY position
+
+
+MOVE student → APPROVED
+REMOVE from waitlist
+________________
+
+
+🔹 5.5 Monthly Reset
+ON new_month:
+
+
+RESET IntakeCapacity
+SET allocated_count = 0
+SET status = OPEN
+________________
+
+
+🔹 5.6 Admin Override (Controlled)
+IF admin_override == TRUE
+   THEN allow enrollment beyond limit
+   LOG reason
+________________
+________________
+
+
+🖥️ 6. UI / Dashboard
+________________
+
+
+🔹 Admin Dashboard
+* Monthly capacity
+* Allocated count
+* MLM vs Direct usage
+* Remaining seats
+________________
+
+
+🔹 Student View
+* “Seats Available” / “Waitlisted”
+* Estimated intake month
+________________
+
+
+🔹 Waitlist View
+* Position in queue
+* Expected confirmation date
+________________
+________________
+
+
+⚠️ 7. Constraints
+________________
+
+
+Constraint 1
+* No enrollment beyond capacity without admin override
+________________
+
+
+Constraint 2
+* Waitlist must follow FIFO
+________________
+
+
+Constraint 3
+* Capacity must be configurable
+________________
+________________
+
+
+🔐 8. Audit & Logs
+Track:
+* Enrollment attempts
+* Waitlist entries
+* Overrides
+* Capacity changes
+________________
+________________
+
+
+🎯 9. Advanced Control (Recommended)
+________________
+
+
+🔹 Dynamic Throttle Adjustment
+IF academic_capacity_low OR staff_shortage
+   THEN reduce max_capacity
+________________
+
+
+🔹 Performance-Based Throttle
+IF completion_rate < threshold
+   THEN reduce intake_next_month
+________________
+________________
+
+
+🎯 10. Updated Design Principle (V2.12)
+“Growth is controlled by system-defined capacity, not by demand.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ No over-enrollment
+* ✔ Quality maintained
+* ✔ Controlled MLM expansion
+* ✔ Predictable operations
+* ✔ Scalable growth
+________________
+
+
+⚡ Final Insight
+You have now converted:
+👉 “Unlimited growth risk”
+➡️
+👉 “Controlled, measurable, system-governed growth”
+________________
+
+
+If you want next, I can:
+📘 SDD Update – Student Program Ledger (SPL) V2.13 (Reputation Monitoring & Crisis Response Module)
+________________
+
+
+🆕 1. Scope Additions
+* Social media & complaint ingestion (via “Nodes”)
+* Central content repository (good/neutral/bad signals)
+* Sentiment + trend analysis using LLM API
+* Automated reputation score & alerting
+* Crisis detection & response playbooks
+* Strategy recommendations (LLM-assisted, human-approved)
+* Full audit trail of inputs, analyses, and actions
+________________
+
+
+🧩 2. Core Principle
+“Public perception is continuously monitored, analyzed, and responded to through a structured, auditable process.”
+________________
+
+
+🗂️ 3. Data Models
+________________
+
+
+🔹 Entity: SocialSignal
+Field
+	Type
+	Description
+	id
+	UUID
+	Signal ID
+	source
+	Enum
+	FACEBOOK / X / YOUTUBE / NEWS / EMAIL / OTHER
+	url
+	String
+	Link/reference
+	content
+	Text
+	Captured text
+	author_handle
+	String
+	Public handle (if any)
+	captured_at
+	Timestamp
+	Time
+	ingested_by
+	UUID
+	Node/Staff
+	tags
+	JSON
+	Keywords (e.g., “refund”, “MLM”, “delay”)
+	________________
+
+
+🔹 Entity: SentimentAnalysis
+Field
+	Type
+	Description
+	id
+	UUID
+	Analysis ID
+	signal_id
+	UUID
+	Link
+	sentiment
+	Enum
+	POSITIVE / NEUTRAL / NEGATIVE
+	score
+	Decimal
+	-1.0 to +1.0
+	topics
+	JSON
+	Extracted topics
+	risk_flag
+	Boolean
+	TRUE if high-risk
+	analyzed_at
+	Timestamp
+	Time
+	model_version
+	String
+	LLM/version
+	________________
+
+
+🔹 Entity: TrendAggregate
+Field
+	Type
+	Description
+	id
+	UUID
+	Trend ID
+	period
+	String
+	e.g., 2026-04-30
+	total_signals
+	Integer
+	Count
+	negative_ratio
+	Decimal
+	Neg/Total
+	top_topics
+	JSON
+	Top issues
+	reputation_score
+	Integer
+	0–100
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: CrisisEvent
+Field
+	Type
+	Description
+	id
+	UUID
+	Event ID
+	trigger_reason
+	String
+	e.g., spike in negatives
+	severity
+	Enum
+	LOW / MEDIUM / HIGH / CRITICAL
+	status
+	Enum
+	OPEN / IN_RESPONSE / RESOLVED
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: ResponseStrategy
+Field
+	Type
+	Description
+	id
+	UUID
+	Strategy ID
+	crisis_id
+	UUID
+	Link
+	summary
+	Text
+	LLM-generated analysis
+	recommended_actions
+	JSON
+	Steps
+	approved_by
+	UUID
+	Human approver
+	status
+	Enum
+	DRAFT / APPROVED / EXECUTED
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: CrisisPlaybook
+Field
+	Type
+	Description
+	id
+	UUID
+	Playbook ID
+	scenario
+	String
+	e.g., MISSELLING, REFUND_DELAY
+	predefined_actions
+	JSON
+	Standard steps
+	communication_templates
+	JSON
+	Approved messages
+	owner_role
+	Enum
+	COMPLIANCE / PR / SUPPORT
+	________________
+________________
+
+
+⚙️ 4. System Behavior
+________________
+
+
+🔹 4.1 Signal Ingestion (Nodes)
+Nodes submit SocialSignal (URL + content + tags)
+
+
+VALIDATE:
+   - no sensitive personal data beyond public content
+STORE signal
+________________
+
+
+🔹 4.2 LLM Analysis Pipeline
+FOR each new SocialSignal:
+
+
+CALL LLM API:
+   - classify sentiment
+   - extract topics
+   - detect risk indicators
+
+
+STORE SentimentAnalysis
+________________
+
+
+🔹 4.3 Trend Aggregation (Periodic)
+DAILY:
+
+
+negative_ratio = negative_signals / total_signals
+reputation_score = 100 - (negative_ratio × weight)
+
+
+STORE TrendAggregate
+________________
+
+
+🔹 4.4 Crisis Detection
+IF negative_ratio > threshold
+  OR spike_detected == TRUE
+THEN
+   CREATE CrisisEvent
+________________
+
+
+🔹 4.5 Strategy Generation (LLM-Assisted)
+ON CrisisEvent:
+
+
+CALL LLM:
+   INPUT:
+       - recent signals
+       - top topics
+       - policy constraints (no financial claims, MEC terminology, etc.)
+
+
+   OUTPUT:
+       - root cause summary
+       - recommended actions
+       - draft communication
+
+
+STORE as ResponseStrategy (DRAFT)
+________________
+
+
+🔹 4.6 Human Approval Gate (Mandatory)
+IF ResponseStrategy.status != APPROVED
+THEN
+   block_public_release
+________________
+
+
+🔹 4.7 Execution & Tracking
+ON approval:
+
+
+EXECUTE actions:
+   - publish approved statement
+   - update FAQ / portal notices
+   - trigger support outreach
+
+
+UPDATE CrisisEvent.status = IN_RESPONSE → RESOLVED
+________________
+________________
+
+
+🖥️ 5. UI / Dashboard
+________________
+
+
+🔹 Reputation Dashboard
+* Reputation Score (0–100)
+* Negative Trend (7-day)
+* Top Topics (e.g., “refund”, “MLM claims”, “delay”)
+* Active Crisis Events
+________________
+
+
+🔹 Signal Feed
+* Real-time list of ingested posts
+* Sentiment tags (color-coded)
+* Drill-down to source URL
+________________
+
+
+🔹 Crisis Console
+* Event severity
+* LLM summary
+* Recommended actions
+* Approval workflow
+________________
+
+
+🔹 Playbook Library
+* Scenario-based templates
+* One-click attach to crisis
+________________
+________________
+
+
+⚠️ 6. Constraints
+________________
+
+
+Constraint 1
+* Human approval required before any public response
+________________
+
+
+Constraint 2
+* Only approved messaging (Product Definition, MEC terminology)
+________________
+
+
+Constraint 3
+* Do not store private/sensitive personal data beyond public content
+________________
+
+
+Constraint 4
+* All LLM outputs must be logged and versioned
+________________
+________________
+
+
+🔐 7. Audit & Evidence
+System must store:
+* All ingested signals (source, timestamp)
+* LLM prompts & outputs (versioned)
+* Approval records
+* Published responses
+* Outcome metrics (before/after sentiment)
+________________
+________________
+
+
+🎯 8. Crisis Communication Plan (Embedded)
+Each playbook must include:
+1. Acknowledge (timely, factual)
+2. Clarify (use standard product definition)
+3. Correct (if misinformation)
+4. Resolve (action steps, timelines)
+5. Follow-up (update status publicly)
+________________
+________________
+
+
+🎯 9. Updated Design Principle (V2.13)
+“Reputation is managed through continuous monitoring, structured analysis, and controlled, approved responses.”
+________________
+
+
+✅ Final Outcome
+With this module:
+* ✔ Early detection of negative trends
+* ✔ Data-driven response strategies
+* ✔ Controlled communication (no misstatements)
+* ✔ Reduced viral risk impact
+* ✔ Full audit trail for every decision
+________________
+
+
+If you want, I can next:
+* Add integration with your DisputeTicket module (auto-create tickets from high-risk signals)
+* Or define ready-made crisis playbooks for your top 5 scenarios (refund, MLM claims, delays, etc.).
+📘 SDD Update – Student Program Ledger (SPL) V2.14 (Policy Versioning & Binding Module)
+________________
+
+
+🆕 1. Scope Additions
+* Central Policy Registry (Refund, MLM, Pricing, Definitions, etc.)
+* Version-controlled policies with effective dates
+* User–policy binding at acceptance time
+* Enforcement of policy-specific logic based on accepted version
+* Re-acceptance workflow on policy updates
+* Full audit trail of policy versions and user acceptance
+________________
+
+
+🧩 2. Core Principle
+“Each user is governed only by the policy version they explicitly accepted, and all system behavior must respect that version.”
+________________
+
+
+🗂️ 3. Data Models
+________________
+
+
+🔹 Entity: Policy
+Field
+	Type
+	Description
+	id
+	UUID
+	Policy ID
+	name
+	String
+	e.g., REFUND_POLICY, MLM_POLICY
+	description
+	Text
+	Summary
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: PolicyVersion
+Field
+	Type
+	Description
+	id
+	UUID
+	Version ID
+	policy_id
+	UUID
+	Link
+	version
+	String
+	e.g., v1.0, v1.1
+	content
+	Text / HTML
+	Full text
+	effective_from
+	Date
+	Start date
+	status
+	Enum
+	ACTIVE / ARCHIVED
+	created_at
+	Timestamp
+	Time
+	________________
+
+
+🔹 Entity: UserPolicyAcceptance
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	student_id
+	UUID
+	User
+	policy_id
+	UUID
+	Policy
+	policy_version
+	String
+	Accepted version
+	accepted_at
+	Timestamp
+	Time
+	ip_address
+	String
+	IP
+	device_info
+	String
+	Device
+	________________
+________________
+
+
+⚙️ 4. System Behavior
+________________
+
+
+🔹 4.1 Mandatory Policy Acceptance
+FOR required policies:
+
+
+IF no UserPolicyAcceptance exists
+THEN block:
+   - registration
+   - payment
+   - MLM activation
+________________
+
+
+🔹 4.2 Version Binding Rule
+ON policy acceptance:
+
+
+STORE exact version
+LOCK user to that version
+________________
+
+
+🔹 4.3 Policy Update Handling
+IF new PolicyVersion created:
+
+
+MARK previous version as ARCHIVED
+SET new version as ACTIVE
+________________
+
+
+🔹 4.4 Re-Acceptance Rule
+IF policy update is marked "REQUIRES_ACCEPTANCE"
+
+
+THEN
+   require user to accept new version
+   BEFORE allowing further actions
+________________
+
+
+🔹 4.5 Runtime Policy Resolution
+WHEN executing business logic:
+
+
+FETCH user's accepted policy_version
+
+
+APPLY rules based on that version
+________________
+
+
+🔹 4.6 Backward Consistency
+* Old users:
+   * Continue under accepted version
+* New users:
+   * Use latest ACTIVE version
+________________
+________________
+
+
+🖥️ 5. UI / Portal Components
+________________
+
+
+🔹 Policy Acceptance Screen
+* Show:
+   * Policy name
+   * Version
+   * Effective date
+✔ Checkbox:
+“I agree to the terms of this policy version.”
+________________
+
+
+🔹 Policy History (User View)
+* List of accepted policies
+* Version + timestamp
+________________
+
+
+🔹 Admin Panel
+* Create new policy version
+* Compare versions
+* Set:
+   * ACTIVE
+   * ARCHIVED
+   * REQUIRES_ACCEPTANCE
+________________
+________________
+
+
+⚠️ 6. Constraints
+________________
+
+
+Constraint 1
+* No action without required policy acceptance
+________________
+
+
+Constraint 2
+* Policy versions are immutable once active
+________________
+
+
+Constraint 3
+* All logic must reference policy version
+________________
+
+
+Constraint 4
+* Version must be visible to user at acceptance
+________________
+________________
+
+
+🔐 7. Audit & Evidence
+System must store:
+* Policy versions (full text)
+* Acceptance records
+* Version comparisons
+* User interaction logs
+________________
+________________
+
+
+🎯 8. Integration Points
+________________
+
+
+🔹 Refund Module
+* Uses accepted refund policy version
+🔹 MLM Module
+* Uses accepted MLM rules
+🔹 Pricing Module
+* Uses pricing version at enrollment
+________________
+________________
+
+
+🎯 9. Updated Design Principle (V2.14)
+“Policies evolve, but user obligations remain tied to explicitly accepted versions.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ No confusion between old and new rules
+* ✔ Legal defensibility strengthened
+* ✔ System behavior consistent per user
+* ✔ Full traceability of policy changes
+________________
+
+
+⚡ Final Insight
+You now eliminate:
+👉 “Which rule applies?”
+and replace it with:
+👉 “This exact version applies—and we can prove it.”
+________________
+
+
+If you want next, I can:
+* Merge all modules (V2.1–V2.14) into a single master SDD document
+* Or generate a database schema (SQL + JPA entities) for full implementation
+📘 SDD Update – Student Program Ledger (SPL) V2.15 (Dynamic Pricing & Cost Adjustment Module)
+________________
+
+
+🆕 1. Scope Additions
+* Annual price increment rule (5%)
+* 5-year major adjustment rule (25%)
+* Batch-based pricing versioning
+* Future-only price application (no retroactive change)
+* Margin buffer enforcement
+* Automated price calculation engine
+________________
+
+
+🧩 2. Core Principle
+“Program pricing evolves predictably over time, while existing students remain protected under their original agreed price.”
+________________
+
+
+📊 3. Pricing Rules
+________________
+
+
+🔹 Rule 1: Annual Increment
+Every year on April 13:
+   new_price = previous_price × 1.05
+________________
+
+
+🔹 Rule 2: 5-Year Adjustment
+Every 5th year:
+   new_price = previous_price × 1.25
+________________
+
+
+🔹 Rule 3: Priority Rule
+If both apply in same year:
+Apply 25% rule ONLY (not both)
+________________
+
+
+🔹 Rule 4: Applicability
+* Applies ONLY to:
+   * New students (new batches)
+* Does NOT affect:
+   * Existing enrolled students
+________________
+
+
+🗂️ 4. Data Models
+________________
+
+
+🔹 Entity: ProgramPricing
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	base_price
+	Decimal
+	Initial price (e.g., 1,800,000)
+	current_price
+	Decimal
+	Active price
+	effective_date
+	Date
+	When applied
+	version
+	String
+	Pricing version
+	created_at
+	Timestamp
+	Time
+	________________
+________________
+
+
+🔹 Entity: PricingHistory
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	previous_price
+	Decimal
+	Old value
+	new_price
+	Decimal
+	Updated value
+	increment_type
+	Enum
+	ANNUAL / FIVE_YEAR
+	applied_on
+	Date
+	Date
+	version
+	String
+	Version
+	________________
+________________
+
+
+🔹 Entity: StudentPricing
+Field
+	Type
+	Description
+	id
+	UUID
+	Record ID
+	student_id
+	UUID
+	Student
+	pricing_version
+	String
+	Locked version
+	program_price
+	Decimal
+	Fixed price
+	locked_at
+	Timestamp
+	Time
+	________________
+________________
+
+
+⚙️ 5. System Behavior
+________________
+
+
+🔹 5.1 Scheduled Price Update Job
+ON April 13 each year:
+
+
+IF year % 5 == 0
+   THEN increment = 25%
+ELSE
+   increment = 5%
+
+
+new_price = current_price × (1 + increment)
+
+
+CREATE new ProgramPricing version
+STORE in PricingHistory
+________________
+
+
+🔹 5.2 Enrollment Pricing Lock
+ON student enrollment:
+
+
+ASSIGN latest pricing_version
+LOCK program_price
+________________
+
+
+🔹 5.3 Price Integrity Rule
+ON system operations:
+
+
+student_price MUST remain unchanged
+________________
+
+
+🔹 5.4 Future Batch Application
+ONLY new enrollments use new price
+________________
+________________
+
+
+🖥️ 6. UI / Portal Components
+________________
+
+
+🔹 Admin Panel
+* Current program price
+* Price history (timeline view)
+* Next scheduled increase
+________________
+
+
+🔹 Student Portal
+* Display:
+   * “Your Program Price (Locked): Rs. X”
+* No dynamic change shown
+________________
+
+
+🔹 Public Website
+* Show:
+   * Current intake price
+   * Effective date
+________________
+________________
+
+
+⚠️ 7. Constraints
+________________
+
+
+Constraint 1
+* No retroactive price changes
+________________
+
+
+Constraint 2
+* Pricing must be versioned
+________________
+
+
+Constraint 3
+* Only one price active at a time
+________________
+
+
+Constraint 4
+* Pricing updates must be automated
+________________
+________________
+
+
+🔐 8. Audit & Evidence
+System must track:
+* Price changes
+* Calculation logic
+* Effective dates
+* Affected batches
+________________
+________________
+
+
+🎯 9. Advanced Control (Recommended)
+________________
+
+
+🔹 Margin Buffer Rule
+IF cost_increase > threshold
+   THEN allow manual override (admin)
+________________
+
+
+🔹 Forecasting
+* Predict:
+   * next 5 years pricing
+   * cost vs revenue
+________________
+________________
+
+
+🎯 10. Updated Design Principle (V2.15)
+“Pricing evolves predictably with time, while protecting existing students through version-locked pricing.”
+________________
+
+
+✅ Final Outcome
+With this:
+* ✔ Inflation risk controlled
+* ✔ Long-term sustainability ensured
+* ✔ No disputes from existing students
+* ✔ Transparent pricing evolution
+* ✔ Fully automated adjustment
+________________
+
+
+⚡ Final Insight
+You have now converted:
+👉 “Uncertain future cost risk”
+➡️
+👉 “Predictable, system-controlled pricing growth model”
+📘 SDD Update – Student Program Ledger (SPL) V2.16 (Soft Governance & Adaptive Control Layer)
+________________
+
+
+🆕 1. Scope Additions
+This module introduces non-restrictive, adaptive controls to manage:
+* Human behavior risk
+* Early warning signals
+* Cross-module consistency
+* Legal drift monitoring
+* Performance scaling signals
+* Reputation & ethics perception
+* Founder dependency
+* External dependency resilience
+________________
+
+
+🧩 2. Core Principle
+“The system guides, monitors, and adapts behavior without rigid enforcement, enabling sustainable and intelligent operations.”
+________________
+
+
+🧠 3. Module Overview
+________________
+
+
+🔹 3.1 Behavior Intelligence Module
+________________
+
+
+🎯 Purpose
+Encourage compliant and responsible user behavior.
+________________
+
+
+Data Model: BehaviorScore
+Field
+	Type
+	Description
+	user_id
+	UUID
+	User
+	score
+	Integer
+	0–100
+	last_updated
+	Timestamp
+	Time
+	risk_level
+	Enum
+	LOW / MEDIUM / HIGH
+	________________
+
+
+System Logic
+score = 100
+
+
+IF compliance_violation → -20
+IF dispute_frequency_high → -10
+IF positive_behavior → +5
+________________
+
+
+Usage
+* Show soft warning badges
+* Highlight trusted users
+________________
+________________
+
+
+🔹 3.2 Early Warning Dashboard
+________________
+
+
+🎯 Purpose
+Detect silent failures early.
+________________
+
+
+Data Model: SystemHealthMetric
+Field
+	Type
+	Description
+	metric_name
+	String
+	e.g., dropout_rate
+	value
+	Decimal
+	Current value
+	threshold
+	Decimal
+	Limit
+	status
+	Enum
+	NORMAL / WARNING / CRITICAL
+	________________
+
+
+Metrics Tracked
+* Dropout rate
+* Complaint rate
+* MLM earning decline
+* Academic delays
+________________
+
+
+Logic
+IF value > threshold
+THEN status = WARNING or CRITICAL
+________________
+________________
+
+
+🔹 3.3 Cross-Module Consistency Monitor
+________________
+
+
+🎯 Purpose
+Detect conflicting decisions across modules.
+________________
+
+
+Data Model: ConsistencyCheck
+Field
+	Type
+	Description
+	id
+	UUID
+	Record
+	module_a
+	String
+	SPL
+	module_b
+	String
+	MLM
+	issue_detected
+	Boolean
+	TRUE/FALSE
+	description
+	String
+	Conflict
+	________________
+
+
+Logic
+IF payout_allowed AND account_frozen
+THEN flag inconsistency
+________________
+________________
+
+
+🔹 3.4 Legal Drift Monitor
+________________
+
+
+🎯 Purpose
+Track changes in laws and interpretations.
+________________
+
+
+Data Model: LegalReview
+Field
+	Type
+	Description
+	id
+	UUID
+	Record
+	review_date
+	Date
+	Date
+	changes_detected
+	Boolean
+	TRUE/FALSE
+	impact_summary
+	Text
+	Notes
+	________________
+
+
+Logic
+SCHEDULE annual legal review
+LOG findings
+________________
+________________
+
+
+🔹 3.5 Data Lifecycle Manager
+________________
+
+
+🎯 Purpose
+Prevent data overload.
+________________
+
+
+Logic
+IF data_age > retention_period
+THEN archive_to_storage
+________________
+________________
+
+
+🔹 3.6 Performance Monitor
+________________
+
+
+🎯 Purpose
+Ensure scalability.
+________________
+
+
+Data Model: PerformanceMetric
+Field
+	Type
+	Description
+	metric
+	String
+	e.g., API latency
+	value
+	Decimal
+	Current
+	status
+	Enum
+	NORMAL / SLOW
+	________________
+________________
+
+
+🔹 3.7 External Dependency Monitor
+________________
+
+
+🎯 Purpose
+Track API/service reliability.
+________________
+
+
+Logic
+IF API_failure_rate > threshold
+THEN alert_admin
+________________
+________________
+
+
+🔹 3.8 Ethics & Perception Monitor
+________________
+
+
+🎯 Purpose
+Maintain public trust.
+________________
+
+
+Integration
+* Uses Social Media Module (V2.13)
+________________
+
+
+Additional Metric
+ethics_score = sentiment_score adjusted for MLM-related keywords
+________________
+________________
+
+
+🔹 3.9 Knowledge Independence Tracker
+________________
+
+
+🎯 Purpose
+Reduce founder dependency.
+________________
+
+
+Data Model: KnowledgeCoverage
+Field
+	Type
+	Description
+	module
+	String
+	SPL
+	documentation_complete
+	Boolean
+	TRUE/FALSE
+	backup_owner_assigned
+	Boolean
+	TRUE/FALSE
+	________________
+________________
+
+
+🔹 3.10 Scenario Simulator (Soft Risk Planning)
+________________
+
+
+🎯 Purpose
+Prepare for unexpected events.
+________________
+
+
+Logic
+simulate:
+   - drop in enrollments
+   - spike in complaints
+   - partner failure
+________________
+________________
+
+
+🖥️ 4. Unified Governance Dashboard
+________________
+
+
+Displays:
+* Behavior score trends
+* System health metrics
+* Reputation score
+* Performance metrics
+* Risk alerts
+________________
+________________
+
+
+⚠️ 5. Soft Constraints
+________________
+
+
+Constraint 1
+* No automatic blocking unless already defined in hard modules
+________________
+
+
+Constraint 2
+* All alerts are advisory
+________________
+
+
+Constraint 3
+* Human decision remains final
+________________
+________________
+
+
+🔐 6. Audit & Transparency
+________________
+
+
+System must log:
+* All warnings
+* All scores
+* All monitoring outputs
+* All recommendations
+________________
+________________
+
+
+🎯 7. Final Design Principle (V2.16)
+“The system evolves intelligently by observing behavior, detecting risks early, and guiding decisions without rigid enforcement.”
+________________
+
+
+✅ Final Outcome
+With this final layer:
+* ✔ Human risks are guided, not forced
+* ✔ Problems detected early
+* ✔ System adapts continuously
+* ✔ Reputation protected proactively
+* ✔ Governance becomes intelligent
+________________
+
+
+🏁 FINAL SYSTEM STATE
+You now have:
+🔒 Hard Control Layer (V2.1–V2.15)
+* Legal
+* Financial
+* Structural
+* Compliance
+🧠 Soft Control Layer (V2.16)
+* Behavioral
+* Analytical
+* Adaptive
+________________
+
+
+⚡ Final Insight
+You have built:
+A fully governed, self-monitoring, scalable education-financial ecosystem
+________________
+
+
+If you want, next step can be:
+* Convert this entire system into a production-ready architecture (code + DB + APIs)
+* Or prepare a Board Paper / Investor Document based on this model

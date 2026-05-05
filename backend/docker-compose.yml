@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # ---------- EEPIP Backend Application ----------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eepip-backend
+    environment:
+      # WildFly datasource configuration
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_PORT: "3306"
+      DB_NAME: temco_system
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-6qZB6d@pIvj}
+      # Flyway configuration passed as JVM system properties so FlywayStartup reads them
+      JAVA_OPTS: >-
+        -Xms256m -Xmx1024m
+        -Djava.net.preferIPv4Stack=true
+        -Djboss.modules.system.pkgs=org.jboss.byteman
+        -Djava.awt.headless=true
+        -Dflyway.url=jdbc:mariadb://host.docker.internal:3306/temco_system
+        -Dflyway.user=root
+        -Dflyway.password=6qZB6d@pIvj
+        -Dflyway.locations=classpath:db/migration
+        -Dflyway.baselineOnMigrate=true
+        -Dflyway.baselineVersion=16
+        -Dflyway.validateOnMigrate=false
+    ports:
+      - "8080:8080"
+      - "9992:9990"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/eepip-api/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s

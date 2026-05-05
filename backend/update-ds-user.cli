@@ -1,0 +1,3 @@
+/subsystem=datasources/data-source=EepipDS:write-attribute(name=user-name,value="eepip_user")
+/subsystem=datasources/data-source=EepipDS:write-attribute(name=password,value="Eepip@2026")
+reload

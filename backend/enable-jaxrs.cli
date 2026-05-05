@@ -1,0 +1,1 @@
+/subsystem=jaxrs:write-attribute(name=jaxrs-2-0-request-matching,value=true)

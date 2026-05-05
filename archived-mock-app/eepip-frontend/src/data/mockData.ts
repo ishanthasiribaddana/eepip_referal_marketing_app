@@ -1,0 +1,103 @@
+export const currentUser = {
+  id: 1,
+  username: 'ishantha',
+  firstName: 'Ishantha',
+  lastName: 'Perera',
+  email: 'ishantha@eepip.local',
+  rank: 'BRONZE' as const,
+  memberState: 'ACTIVATED' as const,
+  investmentAmount: 1800000,
+  investmentDate: '2026-01-15',
+  leftBV: 3,
+  rightBV: 2,
+  carryForwardLeftBV: 1,
+  carryForwardRightBV: 0,
+  totalEarnings: 126000,
+  monthlyEarnings: 36000,
+  teamSize: 6,
+  directRecruits: 4,
+  directRecruitsLeft: 2,
+  directRecruitsRight: 2,
+}
+
+export const treeData = {
+  id: 1,
+  name: 'Ishantha',
+  rank: 'BRONZE',
+  position: 'ROOT' as const,
+  bv: 5,
+  paid: true,
+  left: {
+    id: 2,
+    name: 'Champika',
+    rank: 'STARTER',
+    position: 'LEFT' as const,
+    bv: 2,
+    paid: true,
+    left: {
+      id: 4,
+      name: 'Senuri',
+      rank: 'STARTER',
+      position: 'LEFT' as const,
+      bv: 0,
+      paid: true,
+      left: null,
+      right: null,
+    },
+    right: {
+      id: 6,
+      name: 'Kamal',
+      rank: 'STARTER',
+      position: 'RIGHT' as const,
+      bv: 0,
+      paid: false,
+      left: null,
+      right: null,
+    },
+  },
+  right: {
+    id: 3,
+    name: 'Thenuri',
+    rank: 'STARTER',
+    position: 'RIGHT' as const,
+    bv: 1,
+    paid: true,
+    left: {
+      id: 5,
+      name: 'Nimal',
+      rank: 'STARTER',
+      position: 'LEFT' as const,
+      bv: 0,
+      paid: true,
+      left: null,
+      right: null,
+    },
+    right: null,
+  },
+}
+
+export const commissions = [
+  { id: 1, type: 'DIRECT_SPONSOR', amount: 36000, relatedName: 'Champika', date: '2026-02-01', status: 'PAID', cycleMonth: '2026-02' },
+  { id: 2, type: 'DIRECT_SPONSOR', amount: 36000, relatedName: 'Thenuri', date: '2026-02-15', status: 'PAID', cycleMonth: '2026-02' },
+  { id: 3, type: 'BINARY_PAIRING', amount: 90000, relatedName: 'Pair: Champika + Thenuri', date: '2026-02-28', status: 'PAID', cycleMonth: '2026-02' },
+  { id: 4, type: 'DIRECT_SPONSOR', amount: 36000, relatedName: 'Senuri', date: '2026-03-10', status: 'PAID', cycleMonth: '2026-03' },
+  { id: 5, type: 'DIRECT_SPONSOR', amount: 36000, relatedName: 'Nimal', date: '2026-03-20', status: 'PENDING', cycleMonth: '2026-03' },
+  { id: 6, type: 'MATCHING_BONUS', amount: 27000, relatedName: 'Gen 1: Champika pair', date: '2026-03-28', status: 'PENDING', cycleMonth: '2026-03' },
+]
+
+export const rankRequirements = [
+  { rank: 'STARTER', directRecruits: 0, teamSize: 0, pairsPerMonth: 0, reward: 0 },
+  { rank: 'BRONZE', directRecruits: 4, teamSize: 10, pairsPerMonth: 1, reward: 50000 },
+  { rank: 'SILVER', directRecruits: 8, teamSize: 30, pairsPerMonth: 2, reward: 100000 },
+  { rank: 'GOLD', directRecruits: 15, teamSize: 100, pairsPerMonth: 3, reward: 250000 },
+  { rank: 'PLATINUM', directRecruits: 25, teamSize: 300, pairsPerMonth: 3, reward: 500000 },
+  { rank: 'DIAMOND', directRecruits: 50, teamSize: 1000, pairsPerMonth: 3, reward: 1000000 },
+]
+
+export const epins = [
+  { id: 1, epinNo: 'vA1Fhw', status: 'USED', issuedBy: 'Bank Staff', dateGenerated: '2026-01-10', dateUsed: '2026-01-15', assignedTo: 'Ishantha' },
+  { id: 2, epinNo: 'sO2EYU', status: 'USED', issuedBy: 'Bank Staff', dateGenerated: '2026-02-01', dateUsed: '2026-02-01', assignedTo: 'Champika' },
+  { id: 3, epinNo: 'Xisx8p', status: 'GENERATED', issuedBy: 'Bank Staff', dateGenerated: '2026-03-01', dateUsed: null, assignedTo: null },
+  { id: 4, epinNo: 'BFPSx3', status: 'GENERATED', issuedBy: 'Bank Staff', dateGenerated: '2026-03-01', dateUsed: null, assignedTo: null },
+  { id: 5, epinNo: 'ATeFoc', status: 'EXPIRED', issuedBy: 'Bank Staff', dateGenerated: '2026-01-01', dateUsed: null, assignedTo: null },
+]

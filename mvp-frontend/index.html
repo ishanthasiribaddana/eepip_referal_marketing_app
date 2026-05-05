@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EEPIP - Education Easy-Pay Investment Plan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png">
+</head>
+<body>
+    <div id="app"></div>
+    
+    <!-- React Scripts -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- App Components -->
+    <script src="components/App.js" type="text/babel"></script>
+    <script src="components/Dashboard.js" type="text/babel"></script>
+    <script src="components/BinaryTree.js" type="text/babel"></script>
+    <script src="components/Enrollment.js" type="text/babel"></script>
+    <script src="components/Commissions.js" type="text/babel"></script>
+    <script src="components/Landing.js" type="text/babel"></script>
+    <script src="data/mockData.js"></script>
+    
+    <script type="text/babel">
+        const root = ReactDOM.createRoot(document.getElementById('app'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+﻿📘 MASTER SDD – Risk & Risk Mitigation Specification (Final Consolidated Version)
+(Derived from SPL V2 → V2.16)
+________________
+
+
+🎯 1. Purpose
+This module defines:
+* All identified risk categories
+* Their system-level mitigation mechanisms
+* Enforcement through:
+   * Hard controls (rules, blocks, validations)
+   * Soft controls (monitoring, scoring, alerts)
+________________
+
+
+🧩 2. Risk Governance Architecture
+________________
+
+
+🔒 Hard Control Layer
+* Payment validation
+* Refund restrictions
+* KYC / AML compliance
+* MLM enforcement
+* Policy binding
+* Pricing control
+* Capacity throttling
+________________
+
+
+🧠 Soft Control Layer
+* Behavior monitoring
+* Reputation tracking
+* Early warning system
+* Performance monitoring
+* Legal drift tracking
+________________
+________________
+
+
+📊 3. Risk Categories & Mitigation
+________________
+
+
+🔴 3.1 Financial & Payment Risk
+❗ Risks
+* Chargebacks
+* Fake payments
+* Fund misuse
+________________
+
+
+✅ Mitigation
+Payment State Machine
+INITIATED → CONFIRMED → LOCKED
+Rules
+* No benefits before CONFIRMED
+* Freeze on CHARGEBACK
+Recovery Workflow
+* Notify → calculate dues → recover → reactivate
+________________
+________________
+
+
+🔴 3.2 Refund & Dispute Risk
+❗ Risks
+* Early cancellation
+* Legal disputes
+________________
+
+
+✅ Mitigation
+* 14-day cooling-off rule
+* Strict eligibility check
+* Admin fee deduction
+Dispute System
+* Ticket lifecycle:
+OPEN → REVIEW → RESOLVED → CLOSED
+* SLA enforcement
+* Evidence-based decisions
+________________
+________________
+
+
+🔴 3.3 AML / Compliance Risk
+❗ Risks
+* Illegal funds
+* regulatory exposure
+________________
+
+
+✅ Mitigation
+* Mandatory KYC
+* Risk scoring system
+* Threshold-based review
+IF risk_level == HIGH → BLOCK
+________________
+________________
+
+
+🔴 3.4 MLM Mis-selling Risk
+❗ Risks
+* False income promises
+* misuse of marketing
+________________
+
+
+✅ Mitigation
+* Mandatory disclaimer acceptance
+* Approved marketing assets only
+* Violation tracking
+Penalties
+* Warning
+* Payout suspension
+* Account freeze
+________________
+________________
+
+
+🔴 3.5 Data Privacy Risk
+❗ Risks
+* misuse of student data
+* unclear ownership
+________________
+
+
+✅ Mitigation
+* Data Owner = Bank
+* Institute = Processor
+* RBAC access control
+* Full audit logs
+________________
+________________
+
+
+🔴 3.6 Product Misclassification Risk
+❗ Risks
+* Seen as financial product
+________________
+
+
+✅ Mitigation
+Mandatory system-wide definition:
+“This is a prepaid education program. No financial returns are offered.”
+* Enforced at:
+   * registration
+   * payment
+   * MLM activation
+________________
+________________
+
+
+🔴 3.7 Staff Misalignment Risk
+❗ Risks
+* Different explanations
+* inconsistent actions
+________________
+
+
+✅ Mitigation
+* SOP system
+* Mandatory training
+* Certification gating
+IF not certified → block action
+________________
+________________
+
+
+🔴 3.8 Commission Liability Risk
+❗ Risks
+* payouts exceed funds
+________________
+
+
+✅ Mitigation
+* Commission Reserve Account (CRA)
+* Hard rule:
+payout ≤ available_pool
+* Auto pro-rating
+________________
+________________
+
+
+🔴 3.9 Growth Overload Risk
+❗ Risks
+* too many students
+* quality drop
+________________
+
+
+✅ Mitigation
+max_new_students_per_month = limit
+* Waitlist system
+* MLM vs Direct quotas
+________________
+________________
+
+
+🔴 3.10 Reputation Risk
+❗ Risks
+* viral complaints
+* public trust collapse
+________________
+
+
+✅ Mitigation
+Social Monitoring Module
+* Nodes collect signals
+* LLM analyzes sentiment
+Crisis Workflow
+Detect → Analyze → Strategy → Approve → Respond
+________________
+________________
+
+
+🔴 3.11 Policy Confusion Risk
+❗ Risks
+* old vs new rules conflict
+________________
+
+
+✅ Mitigation
+* Policy versioning
+* User binding
+user → locked to accepted version
+________________
+________________
+
+
+🔴 3.12 Cost Escalation Risk
+❗ Risks
+* rising operational cost
+________________
+
+
+✅ Mitigation
+Pricing Engine
+* +5% yearly
+* +25% every 5 years
+* Future batches only
+________________
+________________
+
+
+🔴 3.13 Legal Jurisdiction Risk
+❗ Risks
+* cross-border disputes
+________________
+
+
+✅ Mitigation
+* Governing law = Sri Lanka
+* Exclusive jurisdiction = Sri Lankan courts
+________________
+________________
+
+
+🔴 3.14 Knowledge Dependency Risk
+❗ Risks
+* system depends on individuals
+________________
+
+
+✅ Mitigation
+* Documentation repository
+* Versioned specs
+* Ownership mapping
+________________
+________________
+
+
+🔴 3.15 Technology Lock-in Risk
+❗ Risks
+* difficult migration
+________________
+
+
+✅ Mitigation
+* Open stack:
+   * React
+   * JAX-RS
+   * EJB
+   * MariaDB
+* Data export APIs
+* External backups
+________________
+________________
+
+
+🔴 3.16 Outcome Risk (Education Value)
+❗ Risks
+* poor student outcomes
+________________
+
+
+✅ Mitigation
+* KPI tracking:
+   * completion rate
+   * employment rate
+* External dependency tracking
+________________
+________________
+
+
+🟡 4. Soft Risk Mitigation Layer
+________________
+
+
+🧠 4.1 Behavior Intelligence
+score = 100 - violations + rewards
+________________
+
+
+📊 4.2 Early Warning System
+Track:
+* dropout rate
+* complaints
+* MLM decline
+________________
+
+
+🔄 4.3 Cross-Module Monitor
+Detect:
+conflict if payout_allowed AND account_frozen
+________________
+
+
+⚖️ 4.4 Legal Drift Monitoring
+* Annual review
+* impact logging
+________________
+
+
+💾 4.5 Data Lifecycle
+* Archive old data
+* optimize storage
+________________
+
+
+⚡ 4.6 Performance Monitoring
+* latency
+* system load
+________________
+
+
+🔗 4.7 External Dependency Monitoring
+* API failures
+* fallback alerts
+________________
+
+
+🧭 4.8 Ethics Monitoring
+* sentiment-based trust score
+________________
+
+
+📚 4.9 Knowledge Coverage Tracking
+* documentation completeness
+* backup ownership
+________________
+
+
+🔮 4.10 Scenario Simulation
+Simulate:
+* low enrollment
+* high complaints
+* partner failure
+________________
+________________
+
+
+🖥️ 5. Unified Risk Dashboard
+________________
+
+
+Displays:
+* Financial risk indicators
+* Compliance status
+* Reputation score
+* System health
+* Alerts
+________________
+________________
+
+
+⚠️ 6. Global Constraints
+________________
+
+
+* No action without compliance
+* No payout beyond pool
+* No enrollment beyond capacity
+* No policy-less operation
+* No undocumented feature
+________________
+________________
+
+
+🔐 7. Audit & Evidence Framework
+System must log:
+* Payments
+* Consents
+* Policy versions
+* KYC data
+* Disputes
+* Reputation signals
+* System decisions
+________________
+________________
+
+
+🎯 8. Final Design Principle
+“Risk is not eliminated—it is continuously controlled, monitored, and adapted through system design.”
+________________
+
+
+✅ FINAL RESULT
+You now have:
+✔ Full Risk Coverage
+* Financial
+* Legal
+* Operational
+* Technical
+* Behavioral
+✔ System Enforcement
+* Deterministic rules
+* Automated checks
+* Human oversight
+✔ Adaptive Intelligence
+* Monitoring
+* Prediction
+* Response
+________________
+
+
+⚡ Final Insight
+This is no longer just a system.
+👉 It is a self-governed risk-controlled ecosystem.
+________________
+
+
+If you want next, I can:
+* Convert this into database schema + API design (implementation-ready)
+* Or prepare a formal regulatory submission / board paper based on this SDD
