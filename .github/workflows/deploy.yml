@@ -32,7 +32,7 @@ jobs:
       - name: Build Backend
         run: |
           cd backend
-          mvn clean compile war:war
+          mvn clean package -DskipTests
       
       - name: Build Frontend
         run: |
