@@ -55,9 +55,9 @@ public class AgentMapperTest {
         Agent agent = new Agent();
         agent.setId(1);
         agent.setMemberId(100);
-        agent.setPosition("LEFT");
+        agent.setPosition(Agent.TreePosition.LEFT);
         agent.setTreeLevel(1);
-        agent.setStatus("ACTIVE");
+        agent.setStatus(Agent.AgentStatus.ACTIVE);
         agent.setActivationDate(LocalDate.now());
         agent.setTotalReferrals(5);
         agent.setTotalAgentRecruits(3);
@@ -73,9 +73,9 @@ public class AgentMapperTest {
         AgentDTO dto = new AgentDTO();
         dto.setId(1);
         dto.setMemberId(100);
-        dto.setPosition("LEFT");
+        dto.setPosition(Agent.TreePosition.LEFT);
         dto.setTreeLevel(1);
-        dto.setStatus("ACTIVE");
+        dto.setStatus(Agent.AgentStatus.ACTIVE);
         dto.setActivationDate(LocalDate.now());
         dto.setTotalReferrals(5);
         dto.setTotalAgentRecruits(3);

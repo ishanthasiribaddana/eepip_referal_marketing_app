@@ -63,10 +63,10 @@ public class AiEngineerMapperTest {
         engineer.setMemberId(100);
         engineer.setSponsorId(50);
         engineer.setParentId(50);
-        engineer.setPosition("LEFT");
+        engineer.setPosition(AiEngineer.TreePosition.LEFT);
         engineer.setTreeLevel(1);
         engineer.setTreePath("/50/1");
-        engineer.setMemberState("ENROLLED");
+        engineer.setMemberState(AiEngineer.MemberState.ENROLLED);
         engineer.setAcademicEligibilityVerified(true);
         engineer.setEnrollmentDate(LocalDate.now());
         engineer.setExpectedGraduation(LocalDate.now().plusYears(4));
@@ -81,7 +81,7 @@ public class AiEngineerMapperTest {
         engineer.setRightBv(1500);
         engineer.setCarryForwardLeftBv(200);
         engineer.setCarryForwardRightBv(300);
-        engineer.setRankCode("BRONZE");
+        engineer.setRankCode(AiEngineer.Rank.BRONZE);
         engineer.setTotalEarnings(new BigDecimal("50000.00"));
         engineer.setMonthlyEarnings(new BigDecimal("10000.00"));
         engineer.setTeamSize(10);
@@ -99,10 +99,10 @@ public class AiEngineerMapperTest {
         dto.setMemberId(100);
         dto.setSponsorId(50);
         dto.setParentId(50);
-        dto.setPosition("LEFT");
+        dto.setPosition(AiEngineer.TreePosition.LEFT);
         dto.setTreeLevel(1);
         dto.setTreePath("/50/1");
-        dto.setMemberState("ENROLLED");
+        dto.setMemberState(AiEngineer.MemberState.ENROLLED);
         dto.setAcademicEligibilityVerified(true);
         dto.setEnrollmentDate(LocalDate.now());
         dto.setExpectedGraduation(LocalDate.now().plusYears(4));
@@ -117,7 +117,7 @@ public class AiEngineerMapperTest {
         dto.setRightBv(1500);
         dto.setCarryForwardLeftBv(200);
         dto.setCarryForwardRightBv(300);
-        dto.setRankCode("BRONZE");
+        dto.setRankCode(AiEngineer.Rank.BRONZE);
         dto.setTotalEarnings(new BigDecimal("50000.00"));
         dto.setMonthlyEarnings(new BigDecimal("10000.00"));
         dto.setTeamSize(10);

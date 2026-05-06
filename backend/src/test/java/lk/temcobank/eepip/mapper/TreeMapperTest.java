@@ -38,7 +38,7 @@ public class TreeMapperTest {
         AiEngineer engineer = new AiEngineer();
         engineer.setId(1);
         engineer.setMemberId(100);
-        engineer.setPosition("LEFT");
+        engineer.setPosition(AiEngineer.TreePosition.LEFT);
         engineer.setTreeLevel(1);
         return engineer;
     }

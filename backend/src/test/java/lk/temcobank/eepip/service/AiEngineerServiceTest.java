@@ -341,7 +341,7 @@ public class AiEngineerServiceTest {
         when(aiEngineerRepository.findById(1)).thenReturn(testAiEngineer);
         when(aiEngineerRepository.save(any(AiEngineer.class))).thenReturn(testAiEngineer);
         
-        aiEngineerService.updateAiEngineerState(1, AiEngineer.MemberState.ACTIVE);
+        aiEngineerService.updateAiEngineerState(1, AiEngineer.MemberState.ENROLLED);
         
         verify(aiEngineerRepository, times(1)).findById(1);
         verify(aiEngineerRepository, times(1)).save(any(AiEngineer.class));
@@ -375,7 +375,7 @@ public class AiEngineerServiceTest {
         engineer.setMemberId(100);
         engineer.setSponsorId(50);
         engineer.setParentId(50);
-        engineer.setPosition("LEFT");
+        engineer.setPosition(AiEngineer.TreePosition.LEFT);
         engineer.setTreeLevel(1);
         engineer.setTreePath("/50/1");
         engineer.setMemberState(AiEngineer.MemberState.WAITING_ENROLLMENT);
@@ -403,7 +403,7 @@ public class AiEngineerServiceTest {
         product.setBankMarginRate(new BigDecimal("6.00"));
         product.setMaxBinaryPairsPerMonth(3);
         product.setMaxAgentPairsPerMonth(2);
-        product.setStatus("ACTIVE");
+        product.setStatus(Product.ProductStatus.ACTIVE);
         product.setEffectiveFrom(LocalDate.now());
         product.setIsActive(true);
         return product;

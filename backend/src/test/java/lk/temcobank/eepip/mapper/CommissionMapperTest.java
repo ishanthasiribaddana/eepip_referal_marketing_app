@@ -57,8 +57,8 @@ public class CommissionMapperTest {
     private Commission createTestCommission() {
         Commission commission = new Commission();
         commission.setId(1);
-        commission.setAiEngineerId(100);
-        commission.setType("DIRECT_SPONSOR");
+        commission.setAiEngineer(null);
+        commission.setType(Commission.CommissionType.DIRECT_SPONSOR);
         commission.setAmount(new BigDecimal("36000.00"));
         commission.setOriginalAmount(new BigDecimal("36000.00"));
         commission.setTaxAmount(BigDecimal.ZERO);
@@ -69,7 +69,7 @@ public class CommissionMapperTest {
         commission.setDescription("Direct sponsor commission");
         commission.setTransactionId("TXN-001");
         commission.setCommissionDate(LocalDate.now());
-        commission.setStatus("PENDING");
+        commission.setStatus(Commission.CommissionStatus.PENDING);
         commission.setApprovedBy(null);
         commission.setApprovedAt(null);
         commission.setRejectionReason(null);
@@ -83,7 +83,7 @@ public class CommissionMapperTest {
         CommissionDTO dto = new CommissionDTO();
         dto.setId(1);
         dto.setAiEngineerId(100);
-        dto.setType("DIRECT_SPONSOR");
+        dto.setType(Commission.CommissionType.DIRECT_SPONSOR);
         dto.setAmount(new BigDecimal("36000.00"));
         dto.setOriginalAmount(new BigDecimal("36000.00"));
         dto.setTaxAmount(BigDecimal.ZERO);
@@ -94,7 +94,7 @@ public class CommissionMapperTest {
         dto.setDescription("Direct sponsor commission");
         dto.setTransactionId("TXN-001");
         dto.setCommissionDate(LocalDate.now());
-        dto.setStatus("PENDING");
+        dto.setStatus(Commission.CommissionStatus.PENDING);
         dto.setApprovedBy(null);
         dto.setApprovedAt(null);
         dto.setRejectionReason(null);
