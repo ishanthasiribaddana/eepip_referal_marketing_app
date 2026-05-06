@@ -37,7 +37,7 @@ jobs:
       - name: Build Frontend
         run: |
           cd react-mlm-conversion
-          npm ci
+          npm install
           npm run build
       
       - name: Build Docker images
