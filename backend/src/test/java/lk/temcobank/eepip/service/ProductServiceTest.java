@@ -250,7 +250,7 @@ public class ProductServiceTest {
         product.setBankMarginRate(new BigDecimal("6.00"));
         product.setMaxBinaryPairsPerMonth(3);
         product.setMaxAgentPairsPerMonth(2);
-        product.setStatus("ACTIVE");
+        product.setStatus(Product.ProductStatus.ACTIVE);
         product.setEffectiveFrom(LocalDate.now());
         product.setEffectiveTo(LocalDate.now().plusYears(5));
         product.setIsActive(true);
