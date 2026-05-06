@@ -2,7 +2,6 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
-import viteImagemin from 'vite-plugin-imagemin';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -56,29 +55,6 @@ export default defineConfig({
       gzipSize: true,
       brotliSize: true,
       filename: 'dist/bundle-analysis.html',
-    }),
-    viteImagemin({
-      gifsicle: { optimizationLevel: 7 },
-      optipng: { optimizationLevel: 7 },
-      mozjpeg: { quality: 80 },
-      pngquant: { quality: [0.65, 0.9] },
-      svgo: {
-        plugins: [
-          {
-            name: 'preset-default',
-            params: {
-              overrides: {
-                removeViewBox: false,
-                addAttributesToSVGElement: {
-                  attributes: [
-                    { name: 'xmlns', value: 'http://www.w3.org/2000/svg' },
-                  ],
-                },
-              },
-            },
-          },
-        ],
-      },
     }),
   ],
   server: {
