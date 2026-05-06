@@ -73,8 +73,8 @@ jobs:
             docker tag temco-eepip-frontend:${{ github.ref_name }} temco-eepip-frontend:latest
             docker stop temco-eepip temco-eepip-fe || true
             docker rm temco-eepip temco-eepip-fe || true
-            docker run -d --name temco-eepip -p 127.0.0.1:8089:8080 temco-eepip-backend:latest
-            docker run -d --name temco-eepip-fe -p 127.0.0.1:3005:80 temco-eepip-frontend:latest
+            docker run -d --name temco-eepip -p 0.0.0.0:8089:8080 temco-eepip-backend:latest
+            docker run -d --name temco-eepip-fe -p 0.0.0.0:3005:80 temco-eepip-frontend:latest
             rm /tmp/backend-image.tar.gz /tmp/frontend-image.tar.gz
           ENDSSH
       
