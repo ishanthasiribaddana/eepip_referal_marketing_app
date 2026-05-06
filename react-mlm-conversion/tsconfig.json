@@ -15,11 +15,10 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["./*"]
-    },
-    "types": ["vite/client"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "api/**/*.ts", "types/**/*.ts"],
   "exclude": ["node_modules", "vite.config.ts", "dist"],
