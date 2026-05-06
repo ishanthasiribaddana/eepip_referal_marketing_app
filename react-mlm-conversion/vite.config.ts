@@ -4,6 +4,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
 import viteImagemin from 'vite-plugin-imagemin';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 export default defineConfig({
   plugins: [
     react(),
@@ -48,7 +50,8 @@ export default defineConfig({
         ],
       },
     }),
-    visualizer({
+    // Only use visualizer in development for bundle analysis
+    !isProduction && visualizer({
       open: false,
       gzipSize: true,
       brotliSize: true,
