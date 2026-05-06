@@ -37,9 +37,9 @@ jobs:
       - name: Build Frontend
         run: |
           cd react-mlm-conversion
+          npm install --include=dev
           export NODE_ENV=production
           export PATH="$PATH:$(pwd)/node_modules/.bin"
-          npm install
           npm run build
       
       - name: Build Docker images
