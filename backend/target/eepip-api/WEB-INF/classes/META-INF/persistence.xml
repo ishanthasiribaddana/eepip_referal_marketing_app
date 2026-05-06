@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+                                 http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd"
+             version="2.2">
+
+    <persistence-unit name="eepipPU" transaction-type="JTA">
+        <jta-data-source>java:/EepipDS</jta-data-source>
+
+        <!-- EEPIP Entity Classes -->
+        <class>lk.temcobank.eepip.entity.Product</class>
+        <class>lk.temcobank.eepip.entity.AiEngineer</class>
+        <class>lk.temcobank.eepip.entity.Commission</class>
+        <class>lk.temcobank.eepip.entity.BinaryPool</class>
+        <class>lk.temcobank.eepip.entity.RankHistory</class>
+        <class>lk.temcobank.eepip.entity.Epin</class>
+        <class>lk.temcobank.eepip.entity.Agent</class>
+        <class>lk.temcobank.eepip.entity.AgentCommission</class>
+        <class>lk.temcobank.eepip.entity.AgentBinaryPool</class>
+        <class>lk.temcobank.eepip.entity.Payment</class>
+        <class>lk.temcobank.eepip.entity.AcademicEvent</class>
+        <class>lk.temcobank.eepip.entity.AuditLog</class>
+        <class>lk.temcobank.eepip.entity.Withdrawal</class>
+        <class>lk.temcobank.eepip.entity.Config</class>
+        <class>lk.temcobank.eepip.entity.Document</class>
+
+        <properties>
+            <!-- JPA Properties -->
+            <property name="javax.persistence.schema-generation.database.action" value="none"/>
+            <property name="javax.persistence.schema-generation.scripts.action" value="none"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MariaDBDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="none"/>
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.use_sql_comments" value="true"/>
+        </properties>
+    </persistence-unit>
+
+</persistence>
